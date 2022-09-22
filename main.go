@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"math"
 	"math/rand"
 	"time"
 )
@@ -49,28 +50,54 @@ func validMoves(board [][]int, player int, unused [3]int, leftScore int) [][4]in
 	if unused[player] < 3 && smallEnough {
 		retVal = append(retVal, [4]int{9, 9, 9, 9})
 	}
-	// we can move to empty cells
 	for i := range board {
 		for j := range board[i] {
 			if board[i][j] == player {
+				// we can move to empty cells
+				// down
 				if i > 0 && board[i-1][j] == 9 {
 					retVal = append(retVal, [4]int{i, j, i - 1, j})
 				}
+				// down-left
 				if i > 0 && j < len(board[i-1])-1 && board[i-1][j+1] == 9 {
 					retVal = append(retVal, [4]int{i, j, i - 1, j + 1})
 				}
+				// right
 				if j > 0 && board[i][j-1] == 9 {
 					retVal = append(retVal, [4]int{i, j, i, j - 1})
 				}
-				if smallEnough && i < len(board)-1 && j < len(board[i+1])-1 && board[i+1][j] == 9 {
+				// up
+				if i < len(board)-1 && j < len(board[i+1])-1 && board[i+1][j] == 9 {
 					retVal = append(retVal, [4]int{i, j, i + 1, j})
 				}
-				if smallEnough && i < len(board)-1 && j > 0 && board[i+1][j-1] == 9 {
+				// up-right
+				if i < len(board)-1 && j > 0 && board[i+1][j-1] == 9 {
 					retVal = append(retVal, [4]int{i, j, i + 1, j - 1})
 				}
+				// left
 				if j < len(board[i])-1 && board[i][j+1] == 9 {
 					retVal = append(retVal, [4]int{i, j, i, j + 1})
 				}
+				// TODO: we can kill
+				// down
+				if i > 1 && board[i-2][j] == 9 && board[i-1][j] != player && board[i-1][j] != 9 {
+					retVal = append(retVal, [4]int{i, j, i - 2, j})
+				}
+				// down-left
+				if i > 1 && j < len(board[i-2])-2 && board[i-2][j+2] == 9 && board[i-1][j+1] != player && board[i-1][j+1] != 9 {
+					retVal = append(retVal, [4]int{i, j, i - 2, j + 2})
+				}
+				// right
+				if j > 0 && (j == 1 || board[i][j-2] == 9) && board[i][j-1] != player && board[i][j-1] != 9 {
+					retVal = append(retVal, [4]int{i, j, i, j - 2})
+				}
+				// up
+				// up-right
+				// left
+				if j < len(board[i])-1 && (j == len(board[i])-2 || board[i][j+2] == 9) && board[i][j+1] != player && board[i][j+1] != 9 {
+					retVal = append(retVal, [4]int{i, j, i, j + 2})
+				}
+				// TODO: we can double kill
 			}
 		}
 	}
@@ -98,16 +125,71 @@ func main() {
 		moveInd := rand.Intn(len(valMoves))
 		// do move - either move piece or increase score
 		fmt.Printf("\n%v: [%v, %v] -> [%v, %v]\n", currPlayer, valMoves[moveInd][0], valMoves[moveInd][1], valMoves[moveInd][2], valMoves[moveInd][3])
-		if valMoves[moveInd][0] == 9 {
-			if valMoves[moveInd][2] == 9 {
+		currI := valMoves[moveInd][0]
+		currJ := valMoves[moveInd][1]
+		nextI := valMoves[moveInd][2]
+		nextJ := valMoves[moveInd][3]
+		if currI == 9 {
+			if nextI == 9 {
 				scores[currPlayer] += movePoints(board, currPlayer)
 			} else {
 				unused[currPlayer] -= 1
-				board[valMoves[moveInd][2]][valMoves[moveInd][3]] = currPlayer
+				board[nextI][nextJ] = currPlayer
 			}
 		} else {
 			board[valMoves[moveInd][0]][valMoves[moveInd][1]] = 9
-			board[valMoves[moveInd][2]][valMoves[moveInd][3]] = currPlayer
+			if nextI < 0 || nextI >= len(board) || nextJ < 0 || nextJ >= len(board[nextI]) {
+				unused[currPlayer] += 1
+			} else {
+				board[nextI][nextJ] = currPlayer
+			}
+			fmt.Println(math.Abs(float64(currI) - float64(nextI)))
+			fmt.Println(math.Abs(float64(currJ) - float64(nextJ)))
+			if math.Abs(float64(currI)-float64(nextI)) > 1 || math.Abs(float64(currJ)-float64(nextJ)) > 1 {
+				fmt.Println("delete stuff")
+				if currI > nextI {
+					// TODO: this is wrong
+					for tempI := currI + 1; tempI > nextI; tempI-- {
+						if currJ > nextJ {
+							for tempJ := currJ + 1; tempJ > nextJ; tempJ-- {
+								fmt.Printf("%v, %v = %v\n", tempI, tempJ, board[tempI][tempJ])
+								if board[tempI][tempJ] != 9 {
+									unused[board[tempI][tempJ]] += 1
+									board[tempI][tempJ] = 9
+								}
+							}
+						} else {
+							for tempJ := currJ + 1; tempJ < int(math.Min(float64(len(board[tempI])), float64(nextJ))); tempJ++ {
+								fmt.Printf("%v, %v = %v\n", tempI, tempJ, board[tempI][tempJ])
+								if board[tempI][tempJ] != 9 {
+									unused[board[tempI][tempJ]] += 1
+									board[tempI][tempJ] = 9
+								}
+							}
+						}
+					}
+				} else {
+					for tempI := currI + 1; tempI < nextI; tempI++ {
+						if currJ > nextJ {
+							for tempJ := currJ + 1; tempJ > nextJ; tempJ-- {
+								fmt.Printf("%v, %v = %v\n", tempI, tempJ, board[tempI][tempJ])
+								if board[tempI][tempJ] != 9 {
+									unused[board[tempI][tempJ]] += 1
+									board[tempI][tempJ] = 9
+								}
+							}
+						} else {
+							for tempJ := currJ + 1; tempJ < int(math.Min(float64(len(board[tempI])), float64(nextJ))); tempJ++ {
+								fmt.Printf("%v, %v = %v\n", tempI, tempJ, board[tempI][tempJ])
+								if board[tempI][tempJ] != 9 {
+									unused[board[tempI][tempJ]] += 1
+									board[tempI][tempJ] = 9
+								}
+							}
+						}
+					}
+				}
+			}
 		}
 		printBoard(board)
 		printScores(scores, maxScore)
