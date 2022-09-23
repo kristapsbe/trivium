@@ -1,0 +1,382 @@
+<html>
+    <head>
+        <style>
+            .board {
+                height: 100%;
+                aspect-ratio: 1/1;
+                user-select: none; /* For Chrome and Opera */
+                -ms-user-select: none; /* For Internet Edge and Explorer*/
+                -webkit-user-select: none; /* For Safari */
+                -moz-user-select: none; /* For Firefox */
+                -khtml-user-select: none; /* Konqueror HTML */
+            }
+            .row {
+                text-align: center;
+                height: 8%;
+            }
+            .cell {
+                border: 2px solid black;
+                color: black;
+                display: inline-block;
+                height: 100%;
+                aspect-ratio: 1/1;
+                border-radius: 100px;
+            }
+            .cell-outer {
+                background-color: white;
+                border: 2px solid black;
+                height: 50%;
+                top: 25%;
+                position: relative;
+            }
+            .cell-inner {
+                top: 25%;
+                position: relative;
+                height: 50%;
+            }
+            .player-0-start {
+                border: 2px solid darkred;
+            }
+            .player-0-start.curr-turn {
+                background-color: lightcoral;
+            }
+            .player-0-start.curr-turn.scorable {
+                background-color: darkred;
+                color: white;
+                cursor: pointer;
+            }
+            .player-0-start.curr-turn.scorable:hover {
+                background-color: red;
+                color: white;
+            }
+            .player-0 {
+                background-color: darkred;
+                color: white;
+                cursor: pointer;
+            }
+            .player-0:hover, .player-0.active {
+                background-color: red;
+                color: white;
+            }
+            .player-0-target {
+                background-color: lightcoral;
+                cursor: pointer;
+            }
+            .player-0-target:hover {                
+                background-color: red;
+                color: white;
+            }
+            .player-1-start {
+                border: 2px solid darkgreen;
+            }
+            .player-1-start.curr-turn {
+                background-color: lightgreen;
+            }
+            .player-1-start.curr-turn.scorable {
+                background-color: darkgreen;
+                color: white;
+                cursor: pointer;
+            }
+            .player-1-start.curr-turn.scorable:hover {
+                background-color: green;
+                color: white;
+            }
+            .player-1 {
+                background-color: darkgreen;
+                color: white;
+                cursor: pointer;
+            }
+            .player-1:hover, .player-1.active {
+                background-color: green;
+                color: white;
+            }
+            .player-1-target {
+                background-color: lightgreen;
+                cursor: pointer;
+            }
+            .player-1-target:hover {                
+                background-color: green;
+                color: white;
+            }
+            .player-2 {
+                background-color: darkblue;
+                color: white;
+                cursor: pointer;
+            }
+            .player-2:hover, .player-2.active {
+                background-color: blue;
+                color: white;
+            }
+            .player-2-target {
+                background-color: lightblue;
+                cursor: pointer;
+            }
+            .player-2-target:hover {                
+                background-color: blue;
+                color: white;
+            }
+            .player-2-start {
+                border: 2px solid darkblue;
+            }
+            
+            .player-2-start.curr-turn {
+                background-color: lightblue;
+            }
+            .player-2-start.curr-turn.scorable {
+                background-color: darkblue;
+                color: white;
+                cursor: pointer;
+            }
+            .player-2-start.curr-turn.scorable:hover {
+                background-color: blue;
+                color: white;
+            }
+            .player-score {
+                width: 26%;
+                display: inline-block;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="board">
+            <div class="row">
+                <div class="cell cell-outer i6 j-1"></div>
+                <div class="cell cell-outer i6 j0"></div>
+            </div>
+            <div class="row">
+                <div class="cell cell-outer i5 j-1"></div>
+                <div class="cell i5 j0"><div class="cell-inner">6</div></div>
+                <div class="cell cell-outer i5 j1"></div>
+            </div>
+            <div class="row">
+                <div class="cell cell-outer i4 j-1"></div>
+                <div class="cell i4 j0"><div class="cell-inner">5</div></div>
+                <div class="cell i4 j1"><div class="cell-inner">5</div></div>
+                <div class="cell cell-outer i4 j2"></div>
+            </div>
+            <div class="row">
+                <div class="cell cell-outer i3 j-1"></div>
+                <div class="cell i3 j0"><div class="cell-inner">4</div></div>
+                <div class="cell i3 j1"><div class="cell-inner">4</div></div>
+                <div class="cell i3 j2"><div class="cell-inner">4</div></div>
+                <div class="cell cell-outer i3 j3"></div>
+            </div>
+            <div class="row">
+                <div class="cell cell-outer i2 j-1"></div>
+                <div class="cell i2 j0"><div class="cell-inner">3</div></div>
+                <div class="cell i2 j1"><div class="cell-inner">3</div></div>
+                <div class="cell i2 j2"><div class="cell-inner">3</div></div>
+                <div class="cell i2 j3"><div class="cell-inner">3</div></div>
+                <div class="cell cell-outer i2 j4"></div>
+            </div>
+            <div class="row">
+                <div class="cell cell-outer i1 j-1"></div>
+                <div class="cell i1 j0"><div class="cell-inner">2</div></div>
+                <div class="cell i1 j1"><div class="cell-inner">2</div></div>
+                <div class="cell i1 j2"><div class="cell-inner">2</div></div>
+                <div class="cell i1 j3"><div class="cell-inner">2</div></div>
+                <div class="cell i1 j4"><div class="cell-inner">2</div></div>
+                <div class="cell cell-outer i1 j5"></div>
+            </div>
+            <div class="row">
+                <div class="cell cell-outer i0 j-1"></div>
+                <div class="cell i0 j0"><div class="cell-inner">1</div></div>
+                <div class="cell i0 j1"><div class="cell-inner">1</div></div>
+                <div class="cell i0 j2"><div class="cell-inner">1</div></div>
+                <div class="cell i0 j3"><div class="cell-inner">1</div></div>
+                <div class="cell i0 j4"><div class="cell-inner">1</div></div>
+                <div class="cell i0 j5"><div class="cell-inner">1</div></div>
+                <div class="cell cell-outer i0 j6"></div>
+            </div>
+            <div class="row"></div>
+            <div class="row">
+                <div class="cell player-0 player-0-start"></div>
+                <div class="cell player-0 player-0-start"></div>
+                <div class="cell player-0 player-0-start"></div>
+                <div class="cell player-1 player-1-start"></div>
+                <div class="cell player-1 player-1-start"></div>
+                <div class="cell player-1 player-1-start"></div>
+                <div class="cell player-2 player-2-start"></div>
+                <div class="cell player-2 player-2-start"></div>
+                <div class="cell player-2 player-2-start"></div>
+            </div>
+            <div class="row"></div>
+            <div class="row">
+                <div class="player-score player-0-score">
+                    <div class="cell player-0-start curr-turn"><div class="cell-inner">0</div></div> 
+                    <div class="cell"><div class="cell-inner"><span>0</span>/60</div></div>
+                </div>
+                <div class="player-score player-1-score">
+                    <div class="cell player-1-start"><div class="cell-inner">0</div></div> 
+                    <div class="cell"><div class="cell-inner"><span>0</span>/60</div></div>
+                </div>
+                <div class="player-score player-2-score">
+                    <div class="cell player-2-start"><div class="cell-inner">0</div></div> 
+                    <div class="cell"><div class="cell-inner"><span>0</span>/60</div></div>
+                </div>
+            </div>
+        </div>
+    </body>
+    <footer>
+        <script src="https://code.jquery.com/jquery-3.6.1.min.js"></script>
+        <script>
+            currStatus = {
+                player: 0,
+                board: [
+                    [9, 9, 9, 9, 9, 9],
+                    [9, 9, 9, 9, 9],
+                    [9, 9, 9, 9],
+                    [9, 9, 9],
+                    [9, 9],
+                    [9]
+                ],
+                unused: [3, 3, 3],
+                scores: [0, 0, 0],
+                maxScore: 60
+            };
+
+            validMoves = [
+                [9, 9, 0, 0],
+                [9, 9, 0, 1],
+                [9, 9, 0, 2],
+                [9, 9, 0, 3],
+                [9, 9, 0, 4],
+                [9, 9, 0, 5]
+            ]
+
+            function movePoints(board, player) {
+                for (i = board.length-1; i >= 0; i--) {
+                    console.log(i)
+                    for (j = 0; j < board.length; j++) {
+                        if (board[i][j] == player) {
+                            return (i + 1)
+                        }
+                    }
+                }
+                return 0
+            }
+
+            function getCoords(elem) {
+                classes = $(elem).attr("class").split(/\s+/);
+                currI = -1;
+                currJ = -1;
+                $.each(classes, function(_, v) {
+                    if (v.charAt(0) == 'i') {
+                        currI = parseInt(v.substr(1));
+                    }
+                    if (v.charAt(0) == 'j') {
+                        currJ = parseInt(v.substr(1));
+                    }
+                });
+                return [currI, currJ];
+            }
+
+            function getDelta(currX, nextX) {
+                if (currX < nextX) {
+                    return 1;
+                } else if (currX > nextX) {
+                    return -1;
+                }
+                return 0;
+            }
+
+            $('body').on('click', ".player-0, .player-1, .player-2", function () {
+                classes = $(this).attr("class").split(/\s+/);
+                if (classes.includes(`player-${currStatus.player}`)) {
+                    $(".active").removeClass("active");
+                    $(".player-0-target").removeClass("player-0-target");
+                    $(".player-1-target").removeClass("player-1-target");
+                    $(".player-2-target").removeClass("player-2-target");
+                    $(this).addClass("active");
+                    if (classes.includes(`player-${currStatus.player}-start`)) {
+                        $.each(validMoves, function(_, v) {
+                            if (v[0] == 9 && v[2] != 9) {
+                                $(`.i${v[2]}.j${v[3]}:not(.player-0):not(.player-1):not(.player-2)`).addClass(`player-${currStatus.player}-target`);
+                            }
+                        });
+                    } else {
+                        curr = getCoords($(this));
+                        $.each(validMoves, function(_, v) {
+                            if (v[0] == curr[0] && v[1] == curr[1]) {
+                                $(`.i${v[2]}.j${v[3]}:not(.player-0):not(.player-1):not(.player-2)`).addClass(`player-${currStatus.player}-target`);
+                            }
+                        });
+                    }
+                }
+            });
+
+            $('body').on('click', '.player-0-target, .player-1-target, .player-2-target', function () {
+                next = getCoords($(this));
+                curr = getCoords($(".active")[0]);
+                if (curr[0] == -1) {
+                    curr = next;
+                }
+                if (curr[0] == 9) {
+                    currStatus.unused[currStatus.player]--;
+                    currStatus.board[next[0]][next[1]] = currStatus.player;
+                    $(this).addClass(`player-${currStatus.player}`);
+                } else {
+                    currStatus.board[curr[0]][curr[1]] = 9;
+                    if (next[0] < 0 || next[0] >= currStatus.board.len || next[1] < 0 || next[1] >= currStatus.board[next[0]].len) {
+                        currStatus.unused[currStatus.player]++;
+                        $(`.player-${currStatus.player}-start:not(.player-${currStatus.player}):first`).addClass(`player-${currStatus.player}`);
+                    } else {
+                        currStatus.board[next[0]][next[1]] = currStatus.player;
+                        $(this).addClass(`player-${currStatus.player}`);
+                    }
+                    if (Math.abs(curr[0]-next[0]) > 1 || Math.abs(curr[1]-next[1]) > 1) {
+                        deltaI = getDelta(curr[0], next[0]);
+                        deltaJ = getDelta(curr[1], next[1]);
+                        temp = [curr[0] + deltaI, curr[1] + deltaJ];
+                        while (next[0] != temp[0] || next[1] != temp[1]) {
+                            if (currStatus.board[temp[0]][temp[1]] != 9) {
+                                currStatus.unused[currStatus.board[temp[0]][temp[1]]]++;
+                                $(`.player-${currStatus.board[temp[0]][temp[1]]}-start:not(.player-${currStatus.board[temp[0]][temp[1]]}):first`).addClass(`player-${currStatus.board[temp[0]][temp[1]]}`);
+                            }
+                            currStatus.board[temp[0]][temp[1]] = 9;
+                            $(`.i${temp[0]}.j${temp[1]}`).removeClass('player-0').removeClass('player-1').removeClass('player-2');
+                            temp[0] += deltaI;
+                            temp[1] += deltaJ;
+                        }
+                    }
+                }
+                points = movePoints(currStatus.board, currStatus.player);
+                $(`.player-${currStatus.player}-score .player-${currStatus.player}-start .cell-inner`)[0].innerHTML = points;
+                $(`.player-${currStatus.player}-score .player-${currStatus.player}-start`).removeClass("scorable");
+                if (points+currStatus.scores[currStatus.player] <= currStatus.maxScore) {
+                    $(`.player-${currStatus.player}-score .player-${currStatus.player}-start`).addClass("scorable");
+                }
+                currStatus.player = (currStatus.player + 1) % 3;
+                $(".curr-turn").removeClass("curr-turn");
+                $(`.player-${currStatus.player}-score .player-${currStatus.player}-start`).addClass("curr-turn");
+                $(".active").removeClass("player-0").removeClass("player-1").removeClass("player-2").removeClass("active");
+                $(".player-0-target").removeClass("player-0-target");
+                $(".player-1-target").removeClass("player-1-target");
+                $(".player-2-target").removeClass("player-2-target");
+                $.ajax({
+                    url: "/availableMoves",
+                    type: "POST",
+                    data: JSON.stringify(currStatus),
+                    contentType: "application/json; charset=utf-8",
+                    success: function(data) {
+                        validMoves = data;
+                    }
+                });
+            });
+
+            
+            $('body').on('click', '.curr-turn.scorable', function () {
+                points = movePoints(currStatus.board, currStatus.player);
+                currStatus.scores[currStatus.player] += points;
+                $(`.player-${currStatus.player}-score span`)[0].innerHTML = currStatus.scores[currStatus.player];
+                $(`.player-${currStatus.player}-score .player-${currStatus.player}-start`).removeClass("scorable");
+                if (points+currStatus.scores[currStatus.player] <= currStatus.maxScore) {
+                    $(`.player-${currStatus.player}-score .player-${currStatus.player}-start`).addClass("scorable");
+                }
+                currStatus.player = (currStatus.player + 1) % 3;
+                $(".curr-turn").removeClass("curr-turn");
+                $(`.player-${currStatus.player}-score .player-${currStatus.player}-start`).addClass("curr-turn");
+            });
+        </script>
+    </footer>
+</html>
