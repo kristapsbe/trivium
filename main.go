@@ -177,15 +177,15 @@ func fullGame() {
 }
 
 func main() {
-	router := gin.Default()
+	r := gin.Default()
 
 	//fullGame()
+	r.Static("/static", "web/static")
+	r.StaticFile("/board", "web/board.html")
+	r.POST("/availableMoves", availableMoves)
+	r.POST("/botMove", botMove)
 
-	router.GET("/board", renderBoard)
-	router.POST("/availableMoves", availableMoves)
-	router.POST("/botMove", botMove)
-
-	router.Run("localhost:8080")
+	r.Run(":8080")
 }
 
 func renderBoard(c *gin.Context) {

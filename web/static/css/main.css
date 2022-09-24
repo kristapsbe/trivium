@@ -1,0 +1,162 @@
+.board {
+    height: 100%;
+    aspect-ratio: 1/1;
+    user-select: none; /* For Chrome and Opera */
+    -ms-user-select: none; /* For Internet Edge and Explorer*/
+    -webkit-user-select: none; /* For Safari */
+    -moz-user-select: none; /* For Firefox */
+    -khtml-user-select: none; /* Konqueror HTML */
+}
+
+.row {
+    text-align: center;
+    height: 8%;
+}
+
+.cell {
+    border: 2px solid black;
+    color: black;
+    display: inline-block;
+    height: 100%;
+    aspect-ratio: 1/1;
+    border-radius: 100px;
+}
+
+.cell-outer {
+    background-color: white;
+    border: 2px solid black;
+    height: 50%;
+    top: 25%;
+    position: relative;
+}
+
+.cell-inner {
+    top: 25%;
+    position: relative;
+    height: 50%;
+}
+
+.player-0-start {
+    border: 2px solid darkred;
+}
+
+.player-0-start.curr-turn {
+    background-color: lightcoral;
+}
+
+.player-0-start.curr-turn.scorable {
+    background-color: darkred;
+    color: white;
+    cursor: pointer;
+}
+
+.player-0-start.curr-turn.scorable:hover {
+    background-color: red;
+    color: white;
+}
+
+.player-0 {
+    background-color: darkred;
+    color: white;
+    cursor: pointer;
+}
+
+.player-0:hover, .player-0.active {
+    background-color: red;
+    color: white;
+}
+
+.player-0-target {
+    background-color: lightcoral;
+    cursor: pointer;
+}
+
+.player-0-target:hover {                
+    background-color: red;
+    color: white;
+}
+
+.player-1-start {
+    border: 2px solid darkgreen;
+}
+
+.player-1-start.curr-turn {
+    background-color: lightgreen;
+}
+
+.player-1-start.curr-turn.scorable {
+    background-color: darkgreen;
+    color: white;
+    cursor: pointer;
+}
+
+.player-1-start.curr-turn.scorable:hover {
+    background-color: green;
+    color: white;
+}
+
+.player-1 {
+    background-color: darkgreen;
+    color: white;
+    cursor: pointer;
+}
+
+.player-1:hover, .player-1.active {
+    background-color: green;
+    color: white;
+}
+
+.player-1-target {
+    background-color: lightgreen;
+    cursor: pointer;
+}
+
+.player-1-target:hover {                
+    background-color: green;
+    color: white;
+}
+
+.player-2 {
+    background-color: darkblue;
+    color: white;
+    cursor: pointer;
+}
+
+.player-2:hover, .player-2.active {
+    background-color: blue;
+    color: white;
+}
+
+.player-2-target {
+    background-color: lightblue;
+    cursor: pointer;
+}
+
+.player-2-target:hover {                
+    background-color: blue;
+    color: white;
+}
+
+.player-2-start {
+    border: 2px solid darkblue;
+}
+
+.player-2-start.curr-turn {
+    background-color: lightblue;
+}
+
+.player-2-start.curr-turn.scorable {
+    background-color: darkblue;
+    color: white;
+    cursor: pointer;
+}
+
+.player-2-start.curr-turn.scorable:hover {
+    background-color: blue;
+    color: white;
+}
+
+.player-score {
+    width: 26%;
+    display: inline-block;
+}
