@@ -160,3 +160,15 @@
     width: 26%;
     display: inline-block;
 }
+
+.player-0-prev {
+    border-color: orangered;
+}
+
+.player-1-prev {
+    border-color: greenyellow;
+}
+
+.player-2-prev {
+    border-color: deepskyblue;
+}

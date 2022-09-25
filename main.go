@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"io/ioutil"
 	"math/rand"
 	"net/http"
 	"time"
@@ -188,15 +187,6 @@ func main() {
 	r.Run(":8080")
 }
 
-func renderBoard(c *gin.Context) {
-	fileContent, err := ioutil.ReadFile("board.html")
-	if err != nil {
-		c.AbortWithStatus(404)
-		return
-	}
-	c.Data(http.StatusOK, "text/html; charset=utf-8", fileContent)
-}
-
 func availableMoves(c *gin.Context) {
 	var currStatus gameStatus
 	if err := c.BindJSON(&currStatus); err != nil {
@@ -210,5 +200,7 @@ func botMove(c *gin.Context) {
 	if err := c.BindJSON(&currStatus); err != nil {
 		return
 	}
-	c.IndentedJSON(http.StatusOK, doMove(currStatus))
+	valMoves := validMoves(currStatus.Board, currStatus.Player, currStatus.Unused, currStatus.MaxScore-currStatus.Scores[currStatus.Player])
+	moveInd := rand.Intn(len(valMoves))
+	c.IndentedJSON(http.StatusOK, valMoves[moveInd])
 }
