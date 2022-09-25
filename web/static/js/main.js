@@ -217,7 +217,7 @@ $('body').on('click', '.curr-turn.scorable', function () {
 function botLoop() {
     setTimeout(function() {
         if (!botPlayers.includes(currStatus.player)) {
-            console.log('wait for human');
+            console.log('wait for hooman');
             botLoop();
         } else {
             doBotMove();
