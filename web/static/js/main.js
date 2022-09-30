@@ -111,11 +111,12 @@ function refreshValidMoves(next) {
     });
 }
 
+var playerColors = {0: "red", 1: "green", 2: "blue"};
 function clickScore() {
     clearPrevs();
     currStatus.scores[currStatus.player] += movePoints(currStatus.board, currStatus.player);
     if (currStatus.scores[currStatus.player] == currStatus.maxScore) {
-        alert(`yay ${currStatus.player} wins!`);
+        alert(`yay ${playerColors[currStatus.player]} wins!`);
         gameOver = true;
     }
     $(".curr-turn").addClass(`player-${currStatus.player}-prev`);

@@ -93,7 +93,8 @@ func validMoves(board [6][]int, player int, unused [3]int, leftScore int, forceM
 							retVal = append(retVal, [4]int{i, j, newI, newJ})
 						}
 					}
-					if forceMove[0] == 9 || (forceMove[0] == i && forceMove[1] == j) {
+					// not allowed to jump over pieces downwards
+					if deltaI != -1 && (forceMove[0] == 9 || (forceMove[0] == i && forceMove[1] == j)) {
 						// we can kill opponents pieces
 						hopoverI := i + deltaI
 						hopoverJ := j + deltaJ
