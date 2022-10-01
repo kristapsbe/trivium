@@ -98,7 +98,7 @@ function refreshValidMoves(next) {
         data: JSON.stringify(currStatus),
         contentType: "application/json; charset=utf-8",
         success: function(data) {
-            if (data.length == 0) {
+            if (data.length == 1 && data[0][0] != 9 && (data[0][0] == data[0][2] && data[0][1] == data[0][3])) {
                 refreshValidMoves([9, 9]);
             } else {
                 validMoves = data;
