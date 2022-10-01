@@ -146,13 +146,13 @@ function clickMove(elem) {
         }
         if (Math.abs(curr[0]-next[0]) > 1 || Math.abs(curr[1]-next[1]) > 1) {
             var temp = [curr[0] + getDelta(curr[0], next[0]), curr[1] + getDelta(curr[1], next[1])];
-            if (currStatus.board[temp[0]][temp[1]] != 9) {
+            if (currStatus.board[temp[0]][temp[1]] != currStatus.player) {
                 currStatus.unused[currStatus.board[temp[0]][temp[1]]]++;
                 $(`.i${temp[0]}.j${temp[1]}`).addClass(`player-${currStatus.board[temp[0]][temp[1]]}-prev`);
                 $(`.player-${currStatus.board[temp[0]][temp[1]]}-start:not(.player-${currStatus.board[temp[0]][temp[1]]}):last`).addClass(`player-${currStatus.board[temp[0]][temp[1]]}`).addClass(`player-${currStatus.board[temp[0]][temp[1]]}-prev`);
+                currStatus.board[temp[0]][temp[1]] = 9;
+                $(`.i${temp[0]}.j${temp[1]}`).removeClass('player-0').removeClass('player-1').removeClass('player-2');
             }
-            currStatus.board[temp[0]][temp[1]] = 9;
-            $(`.i${temp[0]}.j${temp[1]}`).removeClass('player-0').removeClass('player-1').removeClass('player-2');
         }
     }
     $(".active").removeClass(`player-${currStatus.player}`);

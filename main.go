@@ -101,8 +101,7 @@ func validMoves(board [6][]int, player int, unused [3]int, leftScore int, forceM
 						targetI := i + (2 * deltaI)
 						targetJ := j + (2 * deltaJ)
 						if targetI >= 0 && targetJ >= -1 && ((targetI < len(board) && targetJ <= len(board[targetI])) || (targetI == len(board) && hopoverJ == 0)) &&
-							(targetI == len(board) || targetJ == len(board[targetI]) || targetJ == -1 || board[targetI][targetJ] == 9) &&
-							board[hopoverI][hopoverJ] != 9 && board[hopoverI][hopoverJ] != player {
+							(targetI == len(board) || targetJ == len(board[targetI]) || targetJ == -1 || board[targetI][targetJ] == 9) && board[hopoverI][hopoverJ] != 9 {
 							retVal = append(retVal, [4]int{i, j, targetI, targetJ})
 						}
 					}
