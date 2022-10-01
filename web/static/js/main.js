@@ -98,7 +98,6 @@ function refreshValidMoves(next) {
         data: JSON.stringify(currStatus),
         contentType: "application/json; charset=utf-8",
         success: function(data) {
-            console.log(data)
             if (data.length == 0) {
                 refreshValidMoves([9, 9]);
             } else {
@@ -169,6 +168,10 @@ function doBotMove() {
         success: function(v) {
             if (v[0] == 9 && v[2] == 9) {
                 clickScore();
+            } else if (v[0] == v[2] && v[1] == v[3]) {
+                // a bot is allowed to stop multi-moves early
+                console.log(`${currStatus.player} - stop early`);
+                refreshValidMoves([9, 9]);
             } else {
                 if (v[0] == 9) {
                     $(`.player-${currStatus.player}-start.player-${currStatus.player}:last`).addClass("active");

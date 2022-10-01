@@ -77,6 +77,9 @@ func validMoves(board [6][]int, player int, unused [3]int, leftScore int, forceM
 		if unused[player] < 3 && smallEnough {
 			retVal = append(retVal, [4]int{9, 9, 9, 9})
 		}
+	} else {
+		// adding this as a flag of sorts to let the bots to stop early in move chains
+		retVal = append(retVal, [4]int{forceMove[0], forceMove[1], forceMove[0], forceMove[1]})
 	}
 	validDirs := [6][2]int{{-1, 0}, {-1, 1}, {0, -1}, {1, 0}, {1, -1}, {0, 1}}
 	for i := range board {
