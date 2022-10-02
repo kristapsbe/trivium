@@ -18,12 +18,12 @@ let gameOver = false;
 let botPlayers = [];
 
 let validMoves = [
-    [9, 9, 0, 0],
-    [9, 9, 0, 1],
-    [9, 9, 0, 2],
-    [9, 9, 0, 3],
-    [9, 9, 0, 4],
-    [9, 9, 0, 5]
+    {"Player":0,"Board":0,"Path":[9,9,0,0]},
+    {"Player":0,"Board":0,"Path":[9,9,0,1]},
+    {"Player":0,"Board":0,"Path":[9,9,0,2]},
+    {"Player":0,"Board":0,"Path":[9,9,0,3]},
+    {"Player":0,"Board":0,"Path":[9,9,0,4]},
+    {"Player":0,"Board":0,"Path":[9,9,0,5]}
 ];
 
 $('#bot1, #bot2, #bot3').on("change", function() {
@@ -104,9 +104,8 @@ function refreshValidMoves(next) {
         data: JSON.stringify(currState),
         contentType: "application/json; charset=utf-8",
         success: function(data) {
-            if (data.length === 1 && data[0][0] !== 9 && (data[0][0] === data[0][2] && data[0][1] === data[0][3])) {
-                console.log("Here's a situation ...");
-                console.dir(currState);
+            if (data.length === 1 && data[0].Path[0] !== 9 && (data[0].Path[0] === data[0].Path[2] && data[0].Path[1] === data[0].Path[3])) {
+                //console.log("Here's a situation (we were only given one choice!) ...");
                 refreshValidMoves([9, 9]);
             } else {
                 validMoves = data;
@@ -175,21 +174,24 @@ function doBotMove() {
         type: "POST",
         data: JSON.stringify(currState),
         contentType: "application/json; charset=utf-8",
-        success: function(v) {
-            console.log("Incoming: " + v)
-            if (v[0] === 9 && v[2] === 9) {
+        success: function(move) {
+            if (move.Board === 1) {
                 clickScore();
-            } else if (v[0] === v[2] && v[1] === v[3]) {
+                return;
+            }
+
+            const path = move.Path;
+            if (path[0] === path[2] && path[1] === path[3]) {
                 // a bot is allowed to stop multi-moves early
                 console.log(`${currState.player} - stop early`);
                 refreshValidMoves([9, 9]);
             } else {
-                if (v[0] === 9) {
+                if (path[0] === 9) {
                     $(`.player-${currState.player}-start.player-${currState.player}:last`).addClass("active");
                 } else {
-                    $(`.i${v[0]}.j${v[1]}`).addClass("active");
+                    $(`.i${path[0]}.j${path[1]}`).addClass("active");
                 }
-                clickMove($(`.i${v[2]}.j${v[3]}`));
+                clickMove($(`.i${path[2]}.j${path[3]}`));
             }
             console.log(`${currState.player} - turn taken`);
         }
@@ -212,16 +214,18 @@ function setActive(elem) {
         $(".player-2-target").removeClass("player-2-target");
         $(elem).addClass("active");
         if (classes.includes(`player-${currState.player}-start`)) {
-            $.each(validMoves, function(_, v) {
-                if (v[0] === 9 && v[2] !== 9) {
-                    $(`.i${v[2]}.j${v[3]}:not(.player-0):not(.player-1):not(.player-2)`).addClass(`player-${currState.player}-target`);
+            $.each(validMoves, function(_, move) {
+                const path = move.Path;
+                if (path[0] === 9 && path[2] !== 9) {
+                    $(`.i${path[2]}.j${path[3]}:not(.player-0):not(.player-1):not(.player-2)`).addClass(`player-${currState.player}-target`);
                 }
             });
         } else {
             const curr = getCoords($(elem));
-            $.each(validMoves, function(_, v) {
-                if (v[0] === curr[0] && v[1] === curr[1]) {
-                    $(`.i${v[2]}.j${v[3]}:not(.player-0):not(.player-1):not(.player-2)`).addClass(`player-${currState.player}-target`);
+            $.each(validMoves, function(_, move) {
+                const path = move.Path;
+                if (path[0] === curr[0] && path[1] === curr[1]) {
+                    $(`.i${path[2]}.j${path[3]}:not(.player-0):not(.player-1):not(.player-2)`).addClass(`player-${currState.player}-target`);
                 }
             });
         }

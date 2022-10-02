@@ -15,3 +15,17 @@ type GameState struct {
 	ForceMove   [2]int   `json:"forceMove"`
 	AfterTurnNo int      `json:"afterTurnNo"`
 }
+
+type Board int
+
+const (
+	STRATEGY Board = 0
+	PROGRESS Board = 1
+)
+
+type Move struct {
+	Player int
+	Board  Board
+	Path   []int // Any number of coordinates for the strategy board, but
+	// if Board is PROGRESS, there will only be two Path ints: the FROM and the TO
+}

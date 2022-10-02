@@ -52,15 +52,16 @@ func movePoints(board [6][]int, player int) int {
 	return 0
 }
 
-func validMoves(state GameState) [][]int {
-	var retVal [][]int
+func validMoves(state GameState) []Move {
+	var moves []Move
 	if state.ForceMove[0] == 9 {
 		// we can add new pieces
 		if state.Unused[state.Player] > 0 {
 			for i := range state.Board[0] {
 				// can only move to an empty cell
 				if state.Board[0][i] == 9 {
-					retVal = append(retVal, []int{9, 9, 0, i, 18, 19, 20, 21})
+					path := []int{9, 9, 0, i}
+					moves = append(moves, Move{state.Player, STRATEGY, path})
 				}
 			}
 		}
@@ -68,12 +69,14 @@ func validMoves(state GameState) [][]int {
 		if state.Unused[state.Player] < 3 {
 			// we have at least one piece on the board - can we just take points?
 			if movePoints(state.Board, state.Player) <= TARGET_SCORE-state.Scores[state.Player] {
-				retVal = append(retVal, []int{9, 9, 9, 9, 18, 19, 20, 21})
+				path := []int{9, 9, 9, 9}
+				moves = append(moves, Move{state.Player, PROGRESS, path})
 			}
 		}
 	} else {
 		// adding this as a flag of sorts to let the bots stop early in move chains
-		retVal = append(retVal, []int{state.ForceMove[0], state.ForceMove[1], state.ForceMove[0], state.ForceMove[1], 18, 19, 20, 21})
+		path := []int{state.ForceMove[0], state.ForceMove[1], state.ForceMove[0], state.ForceMove[1]}
+		moves = append(moves, Move{state.Player, STRATEGY, path})
 	}
 
 	validDirections := [6][2]int{{-1, 0}, {-1, 1}, {0, -1}, {1, 0}, {1, -1}, {0, 1}}
@@ -88,7 +91,8 @@ func validMoves(state GameState) [][]int {
 						newI := i + deltaI
 						newJ := j + deltaJ
 						if newI >= 0 && newJ >= 0 && newI < len(state.Board) && newJ < len(state.Board[newI]) && state.Board[newI][newJ] == 9 {
-							retVal = append(retVal, []int{i, j, newI, newJ, 18, 19, 20, 21})
+							path := []int{i, j, newI, newJ}
+							moves = append(moves, Move{state.Player, STRATEGY, path})
 						}
 					}
 
@@ -101,14 +105,15 @@ func validMoves(state GameState) [][]int {
 						targetJ := j + (2 * deltaJ)
 						if targetI >= 0 && targetJ >= -1 && ((targetI < len(state.Board) && targetJ <= len(state.Board[targetI])) || (targetI == len(state.Board) && hopoverJ == 0)) &&
 							(targetI == len(state.Board) || targetJ == len(state.Board[targetI]) || targetJ == -1 || state.Board[targetI][targetJ] == 9) && state.Board[hopoverI][hopoverJ] != 9 {
-							retVal = append(retVal, []int{i, j, targetI, targetJ, 18, 19, 20, 21})
+							path := []int{i, j, targetI, targetJ}
+							moves = append(moves, Move{state.Player, STRATEGY, path})
 						}
 					}
 				}
 			}
 		}
 	}
-	return retVal
+	return moves
 }
 
 func main() {
@@ -145,9 +150,9 @@ func availableMoves(c *gin.Context) {
 	}
 	valMoves := validMoves(currStatus)
 	if len(valMoves) > 0 {
-		c. /*Indented*/ JSON(http.StatusOK, valMoves)
+		c.JSON(http.StatusOK, valMoves)
 	} else {
-		c. /*Indented*/ JSON(http.StatusOK, [][4]int{})
+		c.JSON(http.StatusOK, [][4]int{})
 	}
 }
 
@@ -158,5 +163,5 @@ func suggestBotMove(c *gin.Context) {
 	}
 	valMoves := validMoves(currStatus)
 	moveInd := rand.Intn(len(valMoves))
-	c. /*Indented*/ JSON(http.StatusOK, valMoves[moveInd])
+	c.JSON(http.StatusOK, valMoves[moveInd])
 }
