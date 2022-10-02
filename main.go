@@ -9,22 +9,6 @@ import (
 	"github.com/google/uuid"
 )
 
-const TARGET_SCORE = 60
-
-type Game struct {
-	GameId string    `json:"gameId"`
-	State  gameState `json:"gameState"`
-}
-
-type gameState struct {
-	Player      int      `json:"player"`
-	Board       [6][]int `json:"board"`
-	Unused      [3]int   `json:"unused"`
-	Scores      [3]int   `json:"scores"`
-	ForceMove   [2]int   `json:"forceMove"`
-	AfterTurnNo int      `json:"afterTurnNo"`
-}
-
 func abs(a int) int {
 	if a < 0 {
 		return -a
