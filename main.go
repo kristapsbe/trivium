@@ -59,7 +59,7 @@ func movePoints(board [6][]int, player int) int {
 	for i := len(board) - 1; i >= 0; i-- {
 		for j := range board[i] {
 			if board[i][j] == player {
-				return (i + 1)
+				return i + 1
 			}
 		}
 	}
@@ -67,7 +67,7 @@ func movePoints(board [6][]int, player int) int {
 }
 
 func validMoves(board [6][]int, player int, unused [3]int, leftScore int, forceMove [2]int) [][4]int {
-	retVal := [][4]int{}
+	var retVal [][4]int
 	if forceMove[0] == 9 {
 		// we can add new pieces
 		if unused[player] > 0 {
@@ -134,12 +134,13 @@ func main() {
 	r.POST("/botMove", botMove)
 	r.GET("/newGame", initializeGame)
 
+	//goland:noinspection GoUnhandledErrorResult
 	r.Run(":8080")
 }
 
 func initializeGame(c *gin.Context) {
 	gameId := uuid.New()
-	fmt.Println("New game: " + gameId.String())
+	//fmt.Println("New game: " + gameId.String())
 	initialState := gameState{
 		Player:    0,
 		Board:     [6][]int{{9, 9, 9, 9, 9, 9}, {9, 9, 9, 9, 9}, {9, 9, 9, 9}, {9, 9, 9}, {9, 9}, {9}},
