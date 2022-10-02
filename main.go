@@ -6,9 +6,15 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 )
 
-type gameStatus struct {
+type Game struct {
+	gameId string
+	state  gameState
+}
+
+type gameState struct {
 	Player    int      `json:"player"`
 	Board     [6][]int `json:"board"`
 	Unused    [3]int   `json:"unused"`
@@ -72,22 +78,25 @@ func validMoves(board [6][]int, player int, unused [3]int, leftScore int, forceM
 				}
 			}
 		}
-		smallEnough := movePoints(board, player) <= leftScore
-		// we have at least one piece on the board - can just take points
-		if unused[player] < 3 && smallEnough {
-			retVal = append(retVal, [4]int{9, 9, 9, 9})
+
+		if unused[player] < 3 {
+			// we have at least one piece on the board - can we just take points?
+			if movePoints(board, player) <= leftScore {
+				retVal = append(retVal, [4]int{9, 9, 9, 9})
+			}
 		}
 	} else {
-		// adding this as a flag of sorts to let the bots to stop early in move chains
+		// adding this as a flag of sorts to let the bots stop early in move chains
 		retVal = append(retVal, [4]int{forceMove[0], forceMove[1], forceMove[0], forceMove[1]})
 	}
-	validDirs := [6][2]int{{-1, 0}, {-1, 1}, {0, -1}, {1, 0}, {1, -1}, {0, 1}}
+
+	validDirections := [6][2]int{{-1, 0}, {-1, 1}, {0, -1}, {1, 0}, {1, -1}, {0, 1}}
 	for i := range board {
 		for j := range board[i] {
 			if board[i][j] == player {
-				for k := range validDirs {
-					deltaI := validDirs[k][0]
-					deltaJ := validDirs[k][1]
+				for k := range validDirections {
+					deltaI := validDirections[k][0]
+					deltaJ := validDirections[k][1]
 					if forceMove[0] == 9 {
 						// we can move to empty cells
 						newI := i + deltaI
@@ -96,9 +105,10 @@ func validMoves(board [6][]int, player int, unused [3]int, leftScore int, forceM
 							retVal = append(retVal, [4]int{i, j, newI, newJ})
 						}
 					}
+
 					// not allowed to jump over pieces downwards
 					if deltaI != -1 && (forceMove[0] == 9 || (forceMove[0] == i && forceMove[1] == j)) {
-						// we can kill opponents pieces
+						// we can eliminate opponent pawns
 						hopoverI := i + deltaI
 						hopoverJ := j + deltaJ
 						targetI := i + (2 * deltaI)
@@ -122,29 +132,43 @@ func main() {
 	r.StaticFile("/board", "web/board.html")
 	r.POST("/availableMoves", availableMoves)
 	r.POST("/botMove", botMove)
+	r.GET("/gameID", initializeGame)
 
 	r.Run(":8080")
 }
 
+func initializeGame(c *gin.Context) {
+	gameId := uuid.New()
+	fmt.Println("New game: " + gameId.String())
+	initialState := gameState{
+		Player:    0,
+		Board:     [6][]int{{9, 9, 9, 9, 9, 9}, {9, 9, 9, 9, 9}, {9, 9, 9, 9}, {9, 9, 9}, {9, 9}, {9}},
+		Unused:    [3]int{3, 3, 3},
+		Scores:    [3]int{0, 0, 0},
+		MaxScore:  60,
+		ForceMove: [2]int{9, 9}}
+	c.JSON(http.StatusOK, Game{gameId.String(), initialState})
+}
+
 func availableMoves(c *gin.Context) {
-	var currStatus gameStatus
+	var currStatus gameState
 	if err := c.BindJSON(&currStatus); err != nil {
 		return
 	}
 	valMoves := validMoves(currStatus.Board, currStatus.Player, currStatus.Unused, currStatus.MaxScore-currStatus.Scores[currStatus.Player], currStatus.ForceMove)
 	if len(valMoves) > 0 {
-		c.IndentedJSON(http.StatusOK, valMoves)
+		c. /*Indented*/ JSON(http.StatusOK, valMoves)
 	} else {
-		c.IndentedJSON(http.StatusOK, [][4]int{})
+		c. /*Indented*/ JSON(http.StatusOK, [][4]int{})
 	}
 }
 
 func botMove(c *gin.Context) {
-	var currStatus gameStatus
+	var currStatus gameState
 	if err := c.BindJSON(&currStatus); err != nil {
 		return
 	}
 	valMoves := validMoves(currStatus.Board, currStatus.Player, currStatus.Unused, currStatus.MaxScore-currStatus.Scores[currStatus.Player], currStatus.ForceMove)
 	moveInd := rand.Intn(len(valMoves))
-	c.IndentedJSON(http.StatusOK, valMoves[moveInd])
+	c. /*Indented*/ JSON(http.StatusOK, valMoves[moveInd])
 }
