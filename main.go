@@ -10,8 +10,8 @@ import (
 )
 
 type Game struct {
-	gameId string
-	state  gameState
+	GameId string    `json:"gameId"`
+	State  gameState `json:"gameState"`
 }
 
 type gameState struct {
@@ -132,7 +132,7 @@ func main() {
 	r.StaticFile("/board", "web/board.html")
 	r.POST("/availableMoves", availableMoves)
 	r.POST("/botMove", botMove)
-	r.GET("/gameID", initializeGame)
+	r.GET("/newGame", initializeGame)
 
 	r.Run(":8080")
 }
