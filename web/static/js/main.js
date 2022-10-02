@@ -10,9 +10,9 @@ const currState = {
     ].reverse(),
     unused: [3, 3, 3],
     scores: [0, 0, 0],
-    maxScore: 60,
     forceMove: [9, 9]
 };
+const TARGET_SCORE = 60;
 
 let gameOver = false;
 let botPlayers = [];
@@ -83,7 +83,7 @@ function updatePointsScorable() {
         const scorable = $(`.player-${i}-score .player-${i}-start`).removeClass("scorable");
         scorable.removeClass("scorable");
         $(`.player-${i}-target`).removeClass(`player-${i}-target`);
-        if ((points > 0) && (points+currState.scores[i] <= currState.maxScore) && (currState.forceMove[0] === 9)) {
+        if ((points > 0) && (points+currState.scores[i] <= TARGET_SCORE) && (currState.forceMove[0] === 9)) {
             scorable.addClass("scorable");
         }
     }
@@ -122,7 +122,7 @@ const playerColors = {0: "Red", 1: "Green", 2: "Blue"};
 function clickScore() {
     clearPrevs();
     currState.scores[currState.player] += availableProgressPoints(currState.board, currState.player);
-    if (currState.scores[currState.player] === currState.maxScore) {
+    if (currState.scores[currState.player] === TARGET_SCORE) {
         alert(`Yay, ${playerColors[currState.player]} wins!`);
         gameOver = true;
     }

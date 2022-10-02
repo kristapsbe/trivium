@@ -9,6 +9,8 @@ import (
 	"github.com/google/uuid"
 )
 
+const TARGET_SCORE = 60
+
 type Game struct {
 	GameId string    `json:"gameId"`
 	State  gameState `json:"gameState"`
@@ -19,7 +21,6 @@ type gameState struct {
 	Board       [6][]int `json:"board"`
 	Unused      [3]int   `json:"unused"`
 	Scores      [3]int   `json:"scores"`
-	MaxScore    int      `json:"maxScore"`
 	ForceMove   [2]int   `json:"forceMove"`
 	AfterTurnNo int      `json:"afterTurnNo"`
 }
@@ -50,9 +51,9 @@ func printBoard(board [6][]int) {
 	}
 }
 
-func printScores(scores [3]int, maxScore int) {
+func printScores(scores [3]int) {
 	for v := range scores {
-		fmt.Printf("%v -> %v/%v\n", v, scores[v], maxScore)
+		fmt.Printf("%v -> %v/%v\n", v, scores[v], TARGET_SCORE)
 	}
 }
 
@@ -147,7 +148,6 @@ func initializeGame(c *gin.Context) {
 		Board:       [6][]int{{9, 9, 9, 9, 9, 9}, {9, 9, 9, 9, 9}, {9, 9, 9, 9}, {9, 9, 9}, {9, 9}, {9}},
 		Unused:      [3]int{3, 3, 3},
 		Scores:      [3]int{0, 0, 0},
-		MaxScore:    60,
 		ForceMove:   [2]int{9, 9},
 		AfterTurnNo: 0,
 	}
@@ -159,7 +159,7 @@ func availableMoves(c *gin.Context) {
 	if err := c.BindJSON(&currStatus); err != nil {
 		return
 	}
-	valMoves := validMoves(currStatus.Board, currStatus.Player, currStatus.Unused, currStatus.MaxScore-currStatus.Scores[currStatus.Player], currStatus.ForceMove)
+	valMoves := validMoves(currStatus.Board, currStatus.Player, currStatus.Unused, TARGET_SCORE-currStatus.Scores[currStatus.Player], currStatus.ForceMove)
 	if len(valMoves) > 0 {
 		c. /*Indented*/ JSON(http.StatusOK, valMoves)
 	} else {
@@ -172,7 +172,7 @@ func suggestBotMove(c *gin.Context) {
 	if err := c.BindJSON(&currStatus); err != nil {
 		return
 	}
-	valMoves := validMoves(currStatus.Board, currStatus.Player, currStatus.Unused, currStatus.MaxScore-currStatus.Scores[currStatus.Player], currStatus.ForceMove)
+	valMoves := validMoves(currStatus.Board, currStatus.Player, currStatus.Unused, TARGET_SCORE-currStatus.Scores[currStatus.Player], currStatus.ForceMove)
 	moveInd := rand.Intn(len(valMoves))
 	c. /*Indented*/ JSON(http.StatusOK, valMoves[moveInd])
 }
