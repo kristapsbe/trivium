@@ -15,12 +15,13 @@ type Game struct {
 }
 
 type gameState struct {
-	Player    int      `json:"player"`
-	Board     [6][]int `json:"board"`
-	Unused    [3]int   `json:"unused"`
-	Scores    [3]int   `json:"scores"`
-	MaxScore  int      `json:"maxScore"`
-	ForceMove [2]int   `json:"forceMove"`
+	Player      int      `json:"player"`
+	Board       [6][]int `json:"board"`
+	Unused      [3]int   `json:"unused"`
+	Scores      [3]int   `json:"scores"`
+	MaxScore    int      `json:"maxScore"`
+	ForceMove   [2]int   `json:"forceMove"`
+	AfterTurnNo int      `json:"afterTurnNo"`
 }
 
 func abs(a int) int {
@@ -66,15 +67,15 @@ func movePoints(board [6][]int, player int) int {
 	return 0
 }
 
-func validMoves(board [6][]int, player int, unused [3]int, leftScore int, forceMove [2]int) [][4]int {
-	var retVal [][4]int
+func validMoves(board [6][]int, player int, unused [3]int, leftScore int, forceMove [2]int) [][]int {
+	var retVal [][]int
 	if forceMove[0] == 9 {
 		// we can add new pieces
 		if unused[player] > 0 {
 			for i := range board[0] {
 				// can only move to an empty cell
 				if board[0][i] == 9 {
-					retVal = append(retVal, [4]int{9, 9, 0, i})
+					retVal = append(retVal, []int{9, 9, 0, i, 18, 19, 20, 21})
 				}
 			}
 		}
@@ -82,12 +83,12 @@ func validMoves(board [6][]int, player int, unused [3]int, leftScore int, forceM
 		if unused[player] < 3 {
 			// we have at least one piece on the board - can we just take points?
 			if movePoints(board, player) <= leftScore {
-				retVal = append(retVal, [4]int{9, 9, 9, 9})
+				retVal = append(retVal, []int{9, 9, 9, 9, 18, 19, 20, 21})
 			}
 		}
 	} else {
 		// adding this as a flag of sorts to let the bots stop early in move chains
-		retVal = append(retVal, [4]int{forceMove[0], forceMove[1], forceMove[0], forceMove[1]})
+		retVal = append(retVal, []int{forceMove[0], forceMove[1], forceMove[0], forceMove[1], 18, 19, 20, 21})
 	}
 
 	validDirections := [6][2]int{{-1, 0}, {-1, 1}, {0, -1}, {1, 0}, {1, -1}, {0, 1}}
@@ -102,7 +103,7 @@ func validMoves(board [6][]int, player int, unused [3]int, leftScore int, forceM
 						newI := i + deltaI
 						newJ := j + deltaJ
 						if newI >= 0 && newJ >= 0 && newI < len(board) && newJ < len(board[newI]) && board[newI][newJ] == 9 {
-							retVal = append(retVal, [4]int{i, j, newI, newJ})
+							retVal = append(retVal, []int{i, j, newI, newJ, 18, 19, 20, 21})
 						}
 					}
 
@@ -115,7 +116,7 @@ func validMoves(board [6][]int, player int, unused [3]int, leftScore int, forceM
 						targetJ := j + (2 * deltaJ)
 						if targetI >= 0 && targetJ >= -1 && ((targetI < len(board) && targetJ <= len(board[targetI])) || (targetI == len(board) && hopoverJ == 0)) &&
 							(targetI == len(board) || targetJ == len(board[targetI]) || targetJ == -1 || board[targetI][targetJ] == 9) && board[hopoverI][hopoverJ] != 9 {
-							retVal = append(retVal, [4]int{i, j, targetI, targetJ})
+							retVal = append(retVal, []int{i, j, targetI, targetJ, 18, 19, 20, 21})
 						}
 					}
 				}
@@ -131,7 +132,7 @@ func main() {
 	r.Static("/static", "web/static")
 	r.StaticFile("/board", "web/board.html")
 	r.POST("/availableMoves", availableMoves)
-	r.POST("/botMove", botMove)
+	r.POST("/suggestBotMove", suggestBotMove)
 	r.GET("/newGame", initializeGame)
 
 	//goland:noinspection GoUnhandledErrorResult
@@ -142,12 +143,14 @@ func initializeGame(c *gin.Context) {
 	gameId := uuid.New()
 	//fmt.Println("New game: " + gameId.String())
 	initialState := gameState{
-		Player:    0,
-		Board:     [6][]int{{9, 9, 9, 9, 9, 9}, {9, 9, 9, 9, 9}, {9, 9, 9, 9}, {9, 9, 9}, {9, 9}, {9}},
-		Unused:    [3]int{3, 3, 3},
-		Scores:    [3]int{0, 0, 0},
-		MaxScore:  60,
-		ForceMove: [2]int{9, 9}}
+		Player:      0,
+		Board:       [6][]int{{9, 9, 9, 9, 9, 9}, {9, 9, 9, 9, 9}, {9, 9, 9, 9}, {9, 9, 9}, {9, 9}, {9}},
+		Unused:      [3]int{3, 3, 3},
+		Scores:      [3]int{0, 0, 0},
+		MaxScore:    60,
+		ForceMove:   [2]int{9, 9},
+		AfterTurnNo: 0,
+	}
 	c.JSON(http.StatusOK, Game{gameId.String(), initialState})
 }
 
@@ -164,7 +167,7 @@ func availableMoves(c *gin.Context) {
 	}
 }
 
-func botMove(c *gin.Context) {
+func suggestBotMove(c *gin.Context) {
 	var currStatus gameState
 	if err := c.BindJSON(&currStatus); err != nil {
 		return
