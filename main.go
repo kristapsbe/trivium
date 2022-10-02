@@ -68,55 +68,55 @@ func movePoints(board [6][]int, player int) int {
 	return 0
 }
 
-func validMoves(board [6][]int, player int, unused [3]int, leftScore int, forceMove [2]int) [][]int {
+func validMoves(state GameState) [][]int {
 	var retVal [][]int
-	if forceMove[0] == 9 {
+	if state.ForceMove[0] == 9 {
 		// we can add new pieces
-		if unused[player] > 0 {
-			for i := range board[0] {
+		if state.Unused[state.Player] > 0 {
+			for i := range state.Board[0] {
 				// can only move to an empty cell
-				if board[0][i] == 9 {
+				if state.Board[0][i] == 9 {
 					retVal = append(retVal, []int{9, 9, 0, i, 18, 19, 20, 21})
 				}
 			}
 		}
 
-		if unused[player] < 3 {
+		if state.Unused[state.Player] < 3 {
 			// we have at least one piece on the board - can we just take points?
-			if movePoints(board, player) <= leftScore {
+			if movePoints(state.Board, state.Player) <= TARGET_SCORE-state.Scores[state.Player] {
 				retVal = append(retVal, []int{9, 9, 9, 9, 18, 19, 20, 21})
 			}
 		}
 	} else {
 		// adding this as a flag of sorts to let the bots stop early in move chains
-		retVal = append(retVal, []int{forceMove[0], forceMove[1], forceMove[0], forceMove[1], 18, 19, 20, 21})
+		retVal = append(retVal, []int{state.ForceMove[0], state.ForceMove[1], state.ForceMove[0], state.ForceMove[1], 18, 19, 20, 21})
 	}
 
 	validDirections := [6][2]int{{-1, 0}, {-1, 1}, {0, -1}, {1, 0}, {1, -1}, {0, 1}}
-	for i := range board {
-		for j := range board[i] {
-			if board[i][j] == player {
+	for i := range state.Board {
+		for j := range state.Board[i] {
+			if state.Board[i][j] == state.Player {
 				for k := range validDirections {
 					deltaI := validDirections[k][0]
 					deltaJ := validDirections[k][1]
-					if forceMove[0] == 9 {
+					if state.ForceMove[0] == 9 {
 						// we can move to empty cells
 						newI := i + deltaI
 						newJ := j + deltaJ
-						if newI >= 0 && newJ >= 0 && newI < len(board) && newJ < len(board[newI]) && board[newI][newJ] == 9 {
+						if newI >= 0 && newJ >= 0 && newI < len(state.Board) && newJ < len(state.Board[newI]) && state.Board[newI][newJ] == 9 {
 							retVal = append(retVal, []int{i, j, newI, newJ, 18, 19, 20, 21})
 						}
 					}
 
 					// not allowed to jump over pieces downwards
-					if deltaI != -1 && (forceMove[0] == 9 || (forceMove[0] == i && forceMove[1] == j)) {
+					if deltaI != -1 && (state.ForceMove[0] == 9 || (state.ForceMove[0] == i && state.ForceMove[1] == j)) {
 						// we can eliminate opponent pawns
 						hopoverI := i + deltaI
 						hopoverJ := j + deltaJ
 						targetI := i + (2 * deltaI)
 						targetJ := j + (2 * deltaJ)
-						if targetI >= 0 && targetJ >= -1 && ((targetI < len(board) && targetJ <= len(board[targetI])) || (targetI == len(board) && hopoverJ == 0)) &&
-							(targetI == len(board) || targetJ == len(board[targetI]) || targetJ == -1 || board[targetI][targetJ] == 9) && board[hopoverI][hopoverJ] != 9 {
+						if targetI >= 0 && targetJ >= -1 && ((targetI < len(state.Board) && targetJ <= len(state.Board[targetI])) || (targetI == len(state.Board) && hopoverJ == 0)) &&
+							(targetI == len(state.Board) || targetJ == len(state.Board[targetI]) || targetJ == -1 || state.Board[targetI][targetJ] == 9) && state.Board[hopoverI][hopoverJ] != 9 {
 							retVal = append(retVal, []int{i, j, targetI, targetJ, 18, 19, 20, 21})
 						}
 					}
@@ -143,7 +143,7 @@ func main() {
 func initializeGame(c *gin.Context) {
 	gameId := uuid.New()
 	//fmt.Println("New game: " + gameId.String())
-	initialState := gameState{
+	initialState := GameState{
 		Player:      0,
 		Board:       [6][]int{{9, 9, 9, 9, 9, 9}, {9, 9, 9, 9, 9}, {9, 9, 9, 9}, {9, 9, 9}, {9, 9}, {9}},
 		Unused:      [3]int{3, 3, 3},
@@ -155,11 +155,11 @@ func initializeGame(c *gin.Context) {
 }
 
 func availableMoves(c *gin.Context) {
-	var currStatus gameState
+	var currStatus GameState
 	if err := c.BindJSON(&currStatus); err != nil {
 		return
 	}
-	valMoves := validMoves(currStatus.Board, currStatus.Player, currStatus.Unused, TARGET_SCORE-currStatus.Scores[currStatus.Player], currStatus.ForceMove)
+	valMoves := validMoves(currStatus)
 	if len(valMoves) > 0 {
 		c. /*Indented*/ JSON(http.StatusOK, valMoves)
 	} else {
@@ -168,11 +168,11 @@ func availableMoves(c *gin.Context) {
 }
 
 func suggestBotMove(c *gin.Context) {
-	var currStatus gameState
+	var currStatus GameState
 	if err := c.BindJSON(&currStatus); err != nil {
 		return
 	}
-	valMoves := validMoves(currStatus.Board, currStatus.Player, currStatus.Unused, TARGET_SCORE-currStatus.Scores[currStatus.Player], currStatus.ForceMove)
+	valMoves := validMoves(currStatus)
 	moveInd := rand.Intn(len(valMoves))
 	c. /*Indented*/ JSON(http.StatusOK, valMoves[moveInd])
 }
