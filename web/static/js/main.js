@@ -1,4 +1,4 @@
-const currStatus = {
+const currState = {
     player: 0,
     board: [
               [9],
@@ -77,13 +77,13 @@ function getDelta(currX, nextX) {
 
 function updatePointsScorable() {
     for (let i = 0; i < 3; i++) {
-        const points = availableProgressPoints(currStatus.board, i);
+        const points = availableProgressPoints(currState.board, i);
         $(`.player-${i}-score .player-${i}-start .cell-inner`)[0].innerHTML = points;
-        $(`.player-${i}-score span`)[0].innerHTML = currStatus.scores[i];
+        $(`.player-${i}-score span`)[0].innerHTML = currState.scores[i];
         const scorable = $(`.player-${i}-score .player-${i}-start`).removeClass("scorable");
         scorable.removeClass("scorable");
         $(`.player-${i}-target`).removeClass(`player-${i}-target`);
-        if ((points > 0) && (points+currStatus.scores[i] <= currStatus.maxScore) && (currStatus.forceMove[0] === 9)) {
+        if ((points > 0) && (points+currState.scores[i] <= currState.maxScore) && (currState.forceMove[0] === 9)) {
             scorable.addClass("scorable");
         }
     }
@@ -92,24 +92,26 @@ function updatePointsScorable() {
 
 function refreshValidMoves(next) {
     if (next[0] === 9) {
-        currStatus.player = ++currStatus.player % 3;
+        currState.player = ++currState.player % 3;
     }
     $(".curr-turn").removeClass("curr-turn");
-    $(`.player-${currStatus.player}-score .player-${currStatus.player}-start`).addClass("curr-turn");
-    currStatus.forceMove = next;
+    $(`.player-${currState.player}-score .player-${currState.player}-start`).addClass("curr-turn");
+    currState.forceMove = next;
     updatePointsScorable();
     $.ajax({
         url: "/availableMoves",
         type: "POST",
-        data: JSON.stringify(currStatus),
+        data: JSON.stringify(currState),
         contentType: "application/json; charset=utf-8",
         success: function(data) {
             if (data.length === 1 && data[0][0] !== 9 && (data[0][0] === data[0][2] && data[0][1] === data[0][3])) {
+                console.log("Here's a situation ...");
+                console.dir(currState);
                 refreshValidMoves([9, 9]);
             } else {
                 validMoves = data;
                 if (next[0] !== 9) {
-                    setActive($(`.i${currStatus.forceMove[0]}.j${currStatus.forceMove[1]}`)[0]);
+                    setActive($(`.i${currState.forceMove[0]}.j${currState.forceMove[1]}`)[0]);
                 }
             }
         }
@@ -119,12 +121,12 @@ function refreshValidMoves(next) {
 const playerColors = {0: "Red", 1: "Green", 2: "Blue"};
 function clickScore() {
     clearPrevs();
-    currStatus.scores[currStatus.player] += availableProgressPoints(currStatus.board, currStatus.player);
-    if (currStatus.scores[currStatus.player] === currStatus.maxScore) {
-        alert(`Yay, ${playerColors[currStatus.player]} wins!`);
+    currState.scores[currState.player] += availableProgressPoints(currState.board, currState.player);
+    if (currState.scores[currState.player] === currState.maxScore) {
+        alert(`Yay, ${playerColors[currState.player]} wins!`);
         gameOver = true;
     }
-    $(".curr-turn").addClass(`player-${currStatus.player}-prev`);
+    $(".curr-turn").addClass(`player-${currState.player}-prev`);
     refreshValidMoves([9, 9]);
 }
 
@@ -133,45 +135,45 @@ function clickMove(elem) {
     const active = $(".active");
     let curr = getCoords(active[0]);
 
-    $(`.i${next[0]}.j${next[1]}`).addClass(`player-${currStatus.player}-prev`);
+    $(`.i${next[0]}.j${next[1]}`).addClass(`player-${currState.player}-prev`);
     if (curr[0] === -1) {
         curr = next;
     }
     if (curr[0] === 9) {
-        currStatus.unused[currStatus.player]--;
-        currStatus.board[next[0]][next[1]] = currStatus.player;
-        $(elem).addClass(`player-${currStatus.player}`);
+        currState.unused[currState.player]--;
+        currState.board[next[0]][next[1]] = currState.player;
+        $(elem).addClass(`player-${currState.player}`);
     } else {
-        currStatus.board[curr[0]][curr[1]] = 9;
-        if (next[0] < 0 || next[0] >= currStatus.board.length || next[1] < 0 || next[1] >= currStatus.board[next[0]].length) {
-            currStatus.unused[currStatus.player]++;
-            $(`.player-${currStatus.player}-start:not(.player-${currStatus.player}):last`).addClass(`player-${currStatus.player}`);
+        currState.board[curr[0]][curr[1]] = 9;
+        if (next[0] < 0 || next[0] >= currState.board.length || next[1] < 0 || next[1] >= currState.board[next[0]].length) {
+            currState.unused[currState.player]++;
+            $(`.player-${currState.player}-start:not(.player-${currState.player}):last`).addClass(`player-${currState.player}`);
         } else {
-            currStatus.board[next[0]][next[1]] = currStatus.player;
-            $(elem).addClass(`player-${currStatus.player}`);
+            currState.board[next[0]][next[1]] = currState.player;
+            $(elem).addClass(`player-${currState.player}`);
         }
         if (Math.abs(curr[0]-next[0]) > 1 || Math.abs(curr[1]-next[1]) > 1) {
             const temp = [curr[0] + getDelta(curr[0], next[0]), curr[1] + getDelta(curr[1], next[1])];
-            if (currStatus.board[temp[0]][temp[1]] !== currStatus.player) {
-                currStatus.unused[currStatus.board[temp[0]][temp[1]]]++;
+            if (currState.board[temp[0]][temp[1]] !== currState.player) {
+                currState.unused[currState.board[temp[0]][temp[1]]]++;
                 const prev = $(`.i${temp[0]}.j${temp[1]}`);
-                prev.addClass(`player-${currStatus.board[temp[0]][temp[1]]}-prev`);
-                $(`.player-${currStatus.board[temp[0]][temp[1]]}-start:not(.player-${currStatus.board[temp[0]][temp[1]]}):last`).addClass(`player-${currStatus.board[temp[0]][temp[1]]}`).addClass(`player-${currStatus.board[temp[0]][temp[1]]}-prev`);
-                currStatus.board[temp[0]][temp[1]] = 9;
+                prev.addClass(`player-${currState.board[temp[0]][temp[1]]}-prev`);
+                $(`.player-${currState.board[temp[0]][temp[1]]}-start:not(.player-${currState.board[temp[0]][temp[1]]}):last`).addClass(`player-${currState.board[temp[0]][temp[1]]}`).addClass(`player-${currState.board[temp[0]][temp[1]]}-prev`);
+                currState.board[temp[0]][temp[1]] = 9;
                 prev.removeClass('player-0').removeClass('player-1').removeClass('player-2');
             }
         }
     }
-    active.removeClass(`player-${currStatus.player}`);
-    active.addClass(`player-${currStatus.player}-prev`);
+    active.removeClass(`player-${currState.player}`);
+    active.addClass(`player-${currState.player}-prev`);
     refreshValidMoves((curr[0] === 9 || Math.abs(curr[0]-next[0]) === 1 || Math.abs(curr[1]-next[1]) === 1) ? [9, 9] : next);
 }
 
 function doBotMove() {
     $.ajax({
-        url: "/botMove",
+        url: "/suggestBotMove",
         type: "POST",
-        data: JSON.stringify(currStatus),
+        data: JSON.stringify(currState),
         contentType: "application/json; charset=utf-8",
         success: function(v) {
             console.log("Incoming: " + v)
@@ -179,17 +181,17 @@ function doBotMove() {
                 clickScore();
             } else if (v[0] === v[2] && v[1] === v[3]) {
                 // a bot is allowed to stop multi-moves early
-                console.log(`${currStatus.player} - stop early`);
+                console.log(`${currState.player} - stop early`);
                 refreshValidMoves([9, 9]);
             } else {
                 if (v[0] === 9) {
-                    $(`.player-${currStatus.player}-start.player-${currStatus.player}:last`).addClass("active");
+                    $(`.player-${currState.player}-start.player-${currState.player}:last`).addClass("active");
                 } else {
                     $(`.i${v[0]}.j${v[1]}`).addClass("active");
                 }
                 clickMove($(`.i${v[2]}.j${v[3]}`));
             }
-            console.log(`${currStatus.player} - turn taken`);
+            console.log(`${currState.player} - turn taken`);
         }
     });
 }
@@ -199,27 +201,27 @@ function clearPrevs() {
 }
 
 function setActive(elem) {
-    if (currStatus.forceMove[0] === 9) {
+    if (currState.forceMove[0] === 9) {
         clearPrevs();
     }
     const classes = $(elem).attr("class").split(/\s+/);
-    if (classes.includes(`player-${currStatus.player}`)) {
+    if (classes.includes(`player-${currState.player}`)) {
         $(".active").removeClass("active");
         $(".player-0-target").removeClass("player-0-target");
         $(".player-1-target").removeClass("player-1-target");
         $(".player-2-target").removeClass("player-2-target");
         $(elem).addClass("active");
-        if (classes.includes(`player-${currStatus.player}-start`)) {
+        if (classes.includes(`player-${currState.player}-start`)) {
             $.each(validMoves, function(_, v) {
                 if (v[0] === 9 && v[2] !== 9) {
-                    $(`.i${v[2]}.j${v[3]}:not(.player-0):not(.player-1):not(.player-2)`).addClass(`player-${currStatus.player}-target`);
+                    $(`.i${v[2]}.j${v[3]}:not(.player-0):not(.player-1):not(.player-2)`).addClass(`player-${currState.player}-target`);
                 }
             });
         } else {
             const curr = getCoords($(elem));
             $.each(validMoves, function(_, v) {
                 if (v[0] === curr[0] && v[1] === curr[1]) {
-                    $(`.i${v[2]}.j${v[3]}:not(.player-0):not(.player-1):not(.player-2)`).addClass(`player-${currStatus.player}-target`);
+                    $(`.i${v[2]}.j${v[3]}:not(.player-0):not(.player-1):not(.player-2)`).addClass(`player-${currState.player}-target`);
                 }
             });
         }
@@ -228,8 +230,8 @@ function setActive(elem) {
 
 const body = $('body');
 body.on('click', ".player-0, .player-1, .player-2", function () {
-    if (!botPlayers.includes(currStatus.player)) {
-        if (currStatus.forceMove[0] === 9) {
+    if (!botPlayers.includes(currState.player)) {
+        if (currState.forceMove[0] === 9) {
             setActive($(this));
         } else {
             const classes = $(this).attr("class").split(/\s+/);
@@ -241,20 +243,20 @@ body.on('click', ".player-0, .player-1, .player-2", function () {
 });
 
 body.on('click', '.player-0-target, .player-1-target, .player-2-target', function () {
-    if (!botPlayers.includes(currStatus.player)) {
+    if (!botPlayers.includes(currState.player)) {
         clickMove($(this));
     }
 });
 
 body.on('click', '.curr-turn.scorable', function () {
-    if (!botPlayers.includes(currStatus.player)) {
+    if (!botPlayers.includes(currState.player)) {
         clickScore();
     }
 });
 
 function botLoop() {
     setTimeout(function() {
-        if (!botPlayers.includes(currStatus.player)) {
+        if (!botPlayers.includes(currState.player)) {
             console.log('wait for hooman');
             botLoop();
         } else {
