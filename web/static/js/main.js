@@ -10,7 +10,7 @@ const currState = {
     ].reverse(),
     unused: [3, 3, 3],
     scores: [0, 0, 0],
-    forceMove: [9, 9]
+    forceMovePawn: [9, 9]
 };
 const TARGET_SCORE = 60;
 
@@ -83,7 +83,7 @@ function updatePointsScorable() {
         const scorable = $(`.player-${i}-score .player-${i}-start`).removeClass("scorable");
         scorable.removeClass("scorable");
         $(`.player-${i}-target`).removeClass(`player-${i}-target`);
-        if ((points > 0) && (points+currState.scores[i] <= TARGET_SCORE) && (currState.forceMove[0] === 9)) {
+        if ((points > 0) && (points+currState.scores[i] <= TARGET_SCORE) && (currState.forceMovePawn[0] === 9)) {
             scorable.addClass("scorable");
         }
     }
@@ -96,7 +96,7 @@ function refreshValidMoves(next) {
     }
     $(".curr-turn").removeClass("curr-turn");
     $(`.player-${currState.player}-score .player-${currState.player}-start`).addClass("curr-turn");
-    currState.forceMove = next;
+    currState.forceMovePawn = next;
     updatePointsScorable();
     $.ajax({
         url: "/availableMoves",
@@ -110,7 +110,7 @@ function refreshValidMoves(next) {
             } else {
                 validMoves = data;
                 if (next[0] !== 9) {
-                    setActive($(`.i${currState.forceMove[0]}.j${currState.forceMove[1]}`)[0]);
+                    setActive($(`.i${currState.forceMovePawn[0]}.j${currState.forceMovePawn[1]}`)[0]);
                 }
             }
         }
@@ -203,7 +203,7 @@ function clearPrevs() {
 }
 
 function setActive(elem) {
-    if (currState.forceMove[0] === 9) {
+    if (currState.forceMovePawn[0] === 9) {
         clearPrevs();
     }
     const classes = $(elem).attr("class").split(/\s+/);
@@ -235,7 +235,7 @@ function setActive(elem) {
 const body = $('body');
 body.on('click', ".player-0, .player-1, .player-2", function () {
     if (!botPlayers.includes(currState.player)) {
-        if (currState.forceMove[0] === 9) {
+        if (currState.forceMovePawn[0] === 9) {
             setActive($(this));
         } else {
             const classes = $(this).attr("class").split(/\s+/);
