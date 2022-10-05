@@ -1,11 +1,11 @@
 .board {
     height: 100%;
     aspect-ratio: 1/1;
-    user-select: none; /* For Chrome and Opera */
     -ms-user-select: none; /* For Internet Edge and Explorer*/
     -webkit-user-select: none; /* For Safari */
     -moz-user-select: none; /* For Firefox */
     -khtml-user-select: none; /* Konqueror HTML */
+    user-select: none; /* For Chrome and Opera */
 }
 
 .row {

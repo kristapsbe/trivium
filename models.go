@@ -6,7 +6,8 @@ const TargetScore = 60
 
 const BoardHeight = 6
 
-// EmptyStrategyBoard Arrays cannot be constants in Go, so:
+// Arrays cannot be constants in Go, so the following function is pro forma:
+
 func EmptyStrategyBoard() [BoardHeight][]int {
 	return [BoardHeight][]int{{9, 9, 9, 9, 9, 9}, {9, 9, 9, 9, 9}, {9, 9, 9, 9}, {9, 9, 9}, {9, 9}, {9}}
 }
@@ -15,14 +16,14 @@ type Board int
 
 const (
 	STRATEGY Board = iota
-	PROGRESS
+	SCORE
 )
 
 func (b Board) toString() string {
 	switch b {
 	case STRATEGY:
 		return "Strategy board"
-	case PROGRESS:
+	case SCORE:
 		return "Progress board"
 	default:
 		return fmt.Sprintf("Unknown(%d)", b)
@@ -72,7 +73,7 @@ type GameState struct {
 	Player        Player   `json:"player"`
 	StrategyBoard [6][]int `json:"board"`
 	ProgressBoard [3]int   `json:"scores"`
-	Unused        [3]int   `json:"unused"`
+	UnusedPawns   [3]int   `json:"unusedPawns"`
 	ForceMovePawn [2]int   `json:"forceMovePawn"`
 	AfterTurnNo   int      `json:"afterTurnNo"`
 }
@@ -80,6 +81,6 @@ type GameState struct {
 type Move struct {
 	Player Player
 	Board  Board
-	Path   []int // Any number of coordinates for the strategy board, but
-	// if StrategyBoard is PROGRESS, there will only be two Path ints: the FROM and the TO
+	Path   [][2]int // Any number of coordinates for the strategy board, but
+	// if StrategyBoard is SCORE, there will only be two Path ints: the FROM and the TO
 }

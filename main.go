@@ -54,32 +54,37 @@ func movePoints(board [6][]int, player Player) int {
 
 func validMoves(state GameState) []Move {
 	var moves []Move
+
+	// If ForceMovePawn[0] is 9, it means this is a request for all possible moves for all three pawns
 	if state.ForceMovePawn[0] == 9 {
-		// we can add new pieces
-		if state.Unused[state.Player] > 0 {
+
+		if state.UnusedPawns[state.Player] > 0 {
+			// Ah, we can add new pieces to the strategy board
 			for i := range state.StrategyBoard[0] {
-				// can only move to an empty cell
+				// can only move to an empty cell on the bottom level
 				if state.StrategyBoard[0][i] == 9 {
-					path := []int{9, 9, 0, i}
-					moves = append(moves, Move{state.Player, STRATEGY, path})
+					moves = append(moves, Move{state.Player, STRATEGY, [][2]int{{9, 9}, {0, i}}})
 				}
 			}
 		}
 
-		if state.Unused[state.Player] < 3 {
-			// we have at least one piece on the board - can we just take points?
+		if state.UnusedPawns[state.Player] < 3 {
+			// we have at least one piece on the board already - can we just take points?
 			if movePoints(state.StrategyBoard, state.Player) <= TargetScore-state.ProgressBoard[state.Player] {
-				path := []int{9, 9, 9, 9}
-				moves = append(moves, Move{state.Player, PROGRESS, path})
+				// The final move has to end _exactly_ at TargetScore. (Can't move 6 to go from 57 to 60.)
+				moves = append(moves, Move{state.Player, SCORE, [][2]int{{9, 9}, {9, 9}}})
+				// path coordinates 9,9,9,9 is shorthand for "take points on the score board"
 			}
 		}
-	} else {
-		// adding this as a flag of sorts to let the bots stop early in move chains
-		path := []int{state.ForceMovePawn[0], state.ForceMovePawn[1], state.ForceMovePawn[0], state.ForceMovePawn[1]}
-		moves = append(moves, Move{state.Player, STRATEGY, path})
+	}
+
+	if state.UnusedPawns[state.Player] == 3 {
+		// All pawns are off of the board. No need to look for further moves.
+		return moves
 	}
 
 	validDirections := [6][2]int{{-1, 0}, {-1, 1}, {0, -1}, {0, 1}, {1, 0}, {1, -1}}
+	// Now iterate over the cells on the strategy board and look for our pawns:
 	for y := range state.StrategyBoard {
 		for x := range state.StrategyBoard[y] {
 			if Player(state.StrategyBoard[y][x]) == state.Player {
@@ -102,7 +107,7 @@ func validMoves(state GameState) []Move {
 							newY < BoardHeight &&
 							newX < len(state.StrategyBoard[newY]) &&
 							state.StrategyBoard[newY][newX] == 9 {
-							path := []int{y, x, newY, newX}
+							path := [][2]int{{y, x}, {newY, newX}}
 							moves = append(moves, Move{state.Player, STRATEGY, path})
 						}
 					}
@@ -117,60 +122,60 @@ func validMoves(state GameState) []Move {
 							(state.ForceMovePawn[0] == y && state.ForceMovePawn[1] == x)) {
 						gonerY := y + deltaY
 						gonerX := x + deltaX
-						newY := y + (2 * deltaY)
-						newX := x + (2 * deltaX)
+						jumpToY := y + (2 * deltaY)
+						jumpToX := x + (2 * deltaX)
 
 						// Only add this as a possibility if ...
-						// 1) new position is above bottom of the bord and not two cells off horizontally
+						// 1) new position is not below bottom of the bord and not two cells off horizontally
 						// 2) new position is not above the top cell or out-of-board on the right-hand side OR
 						// 3) ... new position is above the top of the board and the eliminated pawn is at position {y,0}
 						// 4) new position is above the top of the board OR
 						// 5) ... new position is out-of-board on the right-hand side OR
 						// 6) ... new position is out-of-board on the left-hand side or new position isn't occupied
 						// 7) the cell we jump over is occupied (by anyone, even ourselves)
-						if newY >= 0 && newX >= -1 &&
-							((newY < BoardHeight && newX <= len(state.StrategyBoard[newY])) ||
-								(newY == BoardHeight && gonerX == 0)) &&
-							(newY == BoardHeight ||
-								newX == len(state.StrategyBoard[newY]) ||
-								newX == -1 || state.StrategyBoard[newY][newX] == 9) &&
+						if jumpToY >= 0 && jumpToX >= -1 &&
+							((jumpToY < BoardHeight && jumpToX <= len(state.StrategyBoard[jumpToY])) ||
+								(jumpToY == BoardHeight && gonerX == 0)) &&
+							(jumpToY == BoardHeight ||
+								jumpToX == len(state.StrategyBoard[jumpToY]) ||
+								jumpToX == -1 || state.StrategyBoard[jumpToY][jumpToX] == 9) &&
 							state.StrategyBoard[gonerY][gonerX] != 9 {
 
+							// All conditions OK. Here's tha path that we will use (more than once):
+							jumpPath := [][2]int{{y, x}, {jumpToY, jumpToX}}
+
 							// Now get rid of that pesky pawn
-							path := []int{y, x, newY, newX}
-							moves = append(moves, Move{state.Player, STRATEGY, path})
+							moves = append(moves, Move{state.Player, STRATEGY, jumpPath})
 
 							// Create a new game state for this jump:
 							followingGameState := state
 							// Remove the pawn we just jumped over. Remember to put it back among the unused pawns:
-							followingGameState.Unused[followingGameState.StrategyBoard[gonerY][gonerX]]++
+							followingGameState.UnusedPawns[followingGameState.StrategyBoard[gonerY][gonerX]]++
 							followingGameState.StrategyBoard[gonerY][gonerX] = 9
 							// remove ourselves:
 							followingGameState.StrategyBoard[y][x] = 9
-							if newX == -1 || newX == len(state.StrategyBoard[newY]) || newY == BoardHeight {
-								// We jumped off of the board!, get us into the Unused:
-								followingGameState.Unused[state.Player.toInt()]++
+							if jumpToX == -1 || jumpToX == len(state.StrategyBoard[jumpToY]) || jumpToY == BoardHeight {
+								// We jumped off of the board!, get us into the set of UnusedPawns pawns:
+								followingGameState.UnusedPawns[state.Player.toInt()]++
 							} else {
 								// Insert us at new position:
-								followingGameState.StrategyBoard[newY][newX] = state.Player.toInt()
+								followingGameState.StrategyBoard[jumpToY][jumpToX] = state.Player.toInt()
 							}
-							// Finally, let's make it clear that we want follow-ups from a jump:
-							followingGameState.ForceMovePawn = [2]int{newY, newX}
+							// Finally, let's make it clear that our next request concerns follow-ups from a jump
+							// (using the ForceMovePawn setting):
+							followingGameState.ForceMovePawn = [2]int{jumpToY, jumpToX}
 
-							// Now that we have imagined what the board would look like with this move, let's get its
-							// followup alternatives. All of those moves depart from the wrong state, so we append
-							// them to the current:
+							// Now that we have imagined what the board state would be with this move, let's get its
+							// followup alternatives:
 							followingMoves := validMoves(followingGameState)
+							// But all of those moves depart from that other board state, so we need to append them to
+							// the current:
 							for i := 0; i < len(followingMoves); i++ {
-								p := followingMoves[i].Path
-								if len(p) > 3 && p[0] == p[2] && p[1] == p[3] {
-									moves = append(moves, Move{state.Player, STRATEGY, []int{p[0], p[1]}})
-									fmt.Printf("Adding: %s\n", []int{p[0], p[1]})
-								} else {
-									mPath := append(path, p...)
-									moves = append(moves, Move{state.Player, STRATEGY, mPath})
-									fmt.Printf("Adding: %s\n", mPath)
-								}
+								// The first element in the incoming path will now be identical to the last element
+								// in jumpPath, so let's omit it and append the rest:
+								nextJumpPath := append(jumpPath, followingMoves[i].Path[1:]...)
+								moves = append(moves, Move{state.Player, STRATEGY, nextJumpPath})
+								fmt.Printf("Adding: %s\n", nextJumpPath)
 								fmt.Printf("So we now have: %s\n", moves)
 								fmt.Printf("---\n")
 							}
@@ -181,8 +186,8 @@ func validMoves(state GameState) []Move {
 					}
 				}
 			}
-		}
-	}
+		} // end x axis
+	} // end y axis
 	return moves
 }
 
@@ -206,7 +211,7 @@ func initializeGame(c *gin.Context) {
 		Player:        RED,
 		StrategyBoard: EmptyStrategyBoard(),
 		ProgressBoard: [3]int{0, 0, 0},
-		Unused:        [3]int{3, 3, 3},
+		UnusedPawns:   [3]int{3, 3, 3},
 		ForceMovePawn: [2]int{9, 9},
 		AfterTurnNo:   0,
 	}

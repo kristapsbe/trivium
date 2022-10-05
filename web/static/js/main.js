@@ -8,7 +8,7 @@ const currState = {
          [9, 9, 9, 9, 9],
         [9, 9, 9, 9, 9, 9]
     ].reverse(),
-    unused: [3, 3, 3],
+    unusedPawns: [3, 3, 3],
     scores: [0, 0, 0],
     forceMovePawn: [9, 9]
 };
@@ -18,13 +18,14 @@ let gameOver = false;
 let botPlayers = [];
 
 let validMoves = [
-    {"Player":0,"Board":0,"Path":[9,9,0,0]},
-    {"Player":0,"Board":0,"Path":[9,9,0,1]},
-    {"Player":0,"Board":0,"Path":[9,9,0,2]},
-    {"Player":0,"Board":0,"Path":[9,9,0,3]},
-    {"Player":0,"Board":0,"Path":[9,9,0,4]},
-    {"Player":0,"Board":0,"Path":[9,9,0,5]}
+    {"Player":0,"Board":0,"Path":[[9,9],[0,0]]},
+    {"Player":0,"Board":0,"Path":[[9,9],[0,1]]},
+    {"Player":0,"Board":0,"Path":[[9,9],[0,2]]},
+    {"Player":0,"Board":0,"Path":[[9,9],[0,3]]},
+    {"Player":0,"Board":0,"Path":[[9,9],[0,4]]},
+    {"Player":0,"Board":0,"Path":[[9,9],[0,5]]}
 ];
+
 
 $('#bot1, #bot2, #bot3').on("change", function() {
     botPlayers = [];
@@ -53,23 +54,23 @@ function availableProgressPoints(board, player) {
 
 function getCoords(elem) {
     const classes = $(elem).attr("class").split(/\s+/);
-    let currI = 9;
-    let currJ = 9;
+    let currY = 9;
+    let currX = 9;
     $.each(classes, function(_, v) {
         if (v.charAt(0) === 'i') {
-            currI = parseInt(v.substring(1));
+            currY = parseInt(v.substring(1));
         }
         if (v.charAt(0) === 'j') {
-            currJ = parseInt(v.substring(1));
+            currX = parseInt(v.substring(1));
         }
     });
-    return [currI, currJ];
+    return [currY, currX];
 }
 
-function getDelta(currX, nextX) {
-    if (currX < nextX) {
+function getDelta(current, next) {
+    if (current < next) {
         return 1;
-    } else if (currX > nextX) {
+    } else if (current > next) {
         return -1;
     }
     return 0;
@@ -104,9 +105,9 @@ function refreshValidMoves(next) {
         data: JSON.stringify(currState),
         contentType: "application/json; charset=utf-8",
         success: function(data) {
-            if (data.length === 1 && data[0].Path[0] !== 9 && (data[0].Path[0] === data[0].Path[2] && data[0].Path[1] === data[0].Path[3])) {
+            if (data.length === 1 && data[0].Path[0][0] !== 9 && (data[0].Path[0] === data[0].Path[2] && data[0].Path[1] === data[0].Path[3])) {
                 //console.log("Here's a situation (we were only given one choice!) ...");
-                refreshValidMoves([9, 9]);
+                refreshValidMoves([9, 9]); // since [0] is 9 here, we're not passing on the tour to the next player
             } else {
                 validMoves = data;
                 if (next[0] !== 9) {
@@ -139,13 +140,13 @@ function clickMove(elem) {
         curr = next;
     }
     if (curr[0] === 9) {
-        currState.unused[currState.player]--;
+        currState.unusedPawns[currState.player]--;
         currState.board[next[0]][next[1]] = currState.player;
         $(elem).addClass(`player-${currState.player}`);
     } else {
         currState.board[curr[0]][curr[1]] = 9;
         if (next[0] < 0 || next[0] >= currState.board.length || next[1] < 0 || next[1] >= currState.board[next[0]].length) {
-            currState.unused[currState.player]++;
+            currState.unusedPawns[currState.player]++;
             $(`.player-${currState.player}-start:not(.player-${currState.player}):last`).addClass(`player-${currState.player}`);
         } else {
             currState.board[next[0]][next[1]] = currState.player;
@@ -154,7 +155,7 @@ function clickMove(elem) {
         if (Math.abs(curr[0]-next[0]) > 1 || Math.abs(curr[1]-next[1]) > 1) {
             const temp = [curr[0] + getDelta(curr[0], next[0]), curr[1] + getDelta(curr[1], next[1])];
             if (currState.board[temp[0]][temp[1]] !== currState.player) {
-                currState.unused[currState.board[temp[0]][temp[1]]]++;
+                currState.unusedPawns[currState.board[temp[0]][temp[1]]]++;
                 const prev = $(`.i${temp[0]}.j${temp[1]}`);
                 prev.addClass(`player-${currState.board[temp[0]][temp[1]]}-prev`);
                 $(`.player-${currState.board[temp[0]][temp[1]]}-start:not(.player-${currState.board[temp[0]][temp[1]]}):last`).addClass(`player-${currState.board[temp[0]][temp[1]]}`).addClass(`player-${currState.board[temp[0]][temp[1]]}-prev`);
@@ -181,17 +182,17 @@ function doBotMove() {
             }
 
             const path = move.Path;
-            if (path[0] === path[2] && path[1] === path[3]) {
+            if (path[0] === path[1]) {
                 // a bot is allowed to stop multi-moves early
                 console.log(`${currState.player} - stop early`);
                 refreshValidMoves([9, 9]);
             } else {
-                if (path[0] === 9) {
+                if (path[0][0] === 9) {
                     $(`.player-${currState.player}-start.player-${currState.player}:last`).addClass("active");
                 } else {
-                    $(`.i${path[0]}.j${path[1]}`).addClass("active");
+                    $(`.i${path[0][0]}.j${path[0][1]}`).addClass("active");
                 }
-                clickMove($(`.i${path[2]}.j${path[3]}`));
+                clickMove($(`.i${path[1][0]}.j${path[1][1]}`));
             }
             console.log(`${currState.player} - turn taken`);
         }
@@ -216,16 +217,24 @@ function setActive(elem) {
         if (classes.includes(`player-${currState.player}-start`)) {
             $.each(validMoves, function(_, move) {
                 const path = move.Path;
-                if (path[0] === 9 && path[2] !== 9) {
-                    $(`.i${path[2]}.j${path[3]}:not(.player-0):not(.player-1):not(.player-2)`).addClass(`player-${currState.player}-target`);
+                if (path[0][0] === 9 && path[1][0] !== 9) {
+                    // This is for coming onto the board. If first path element is 9,9, the pawn us unused
+                    $(`.i${path[1][0]}.j${path[1][1]}:not(.player-0):not(.player-1):not(.player-2)`).addClass(`player-${currState.player}-target`);
                 }
             });
         } else {
-            const curr = getCoords($(elem));
+            const current = getCoords($(elem));
             $.each(validMoves, function(_, move) {
                 const path = move.Path;
-                if (path[0] === curr[0] && path[1] === curr[1]) {
-                    $(`.i${path[2]}.j${path[3]}:not(.player-0):not(.player-1):not(.player-2)`).addClass(`player-${currState.player}-target`);
+                if (path[0][0] === current[0] && path[0][1] === current[1]) {
+                    // This path starts from the current cell, so concerns the current pawn
+                    if (path.length > 2) {
+                        console.log("Kristaps, we need to colorize all path elements here, not just te first jump target.")
+                        console.log("We also need to make the newly welcomed path elements clickable, and we should be able,")
+                        console.log("somehow, to distinguish the different paths, since it will be possible to hit the same")
+                        console.log("final cell via different paths ...")
+                    }
+                    $(`.i${path[1][0]}.j${path[1][1]}:not(.player-0):not(.player-1):not(.player-2)`).addClass(`player-${currState.player}-target`);
                 }
             });
         }
