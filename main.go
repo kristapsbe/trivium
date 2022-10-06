@@ -52,6 +52,27 @@ func movePoints(board [6][]int, player Player) int {
 	return 0
 }
 
+// Determines if a given cell coordinate is in the limbus between the outer score board
+// and the inner strategy board. This will be the case if the X value is -1 or equal to
+// the length of the array representing the given row, or if the Y values is equal to the
+// length of the strategy board itself.
+func isInLimbo(coordinate [2]int) bool {
+	// If Y is within the board, check X:
+	if coordinate[0] >= 0 && coordinate[0] < BoardHeight {
+		return coordinate[1] == -1 || coordinate[1] == BoardHeight-coordinate[0]
+	}
+
+	// So Y is not within board. To be on the limbus now, the cell
+	// must have Y equal to BoardHeight and X within the borad.
+	return coordinate[0] == BoardHeight &&
+		coordinate[1] >= 0 && coordinate[1] < BoardHeight-coordinate[0]
+}
+
+func isOnBoard(coordinate [2]int) bool {
+	return coordinate[0] >= 0 && coordinate[0] < BoardHeight &&
+		coordinate[1] >= 0 && coordinate[1] < BoardHeight-coordinate[0]
+}
+
 func validMoves(state GameState) []Move {
 	var moves []Move
 
@@ -126,19 +147,32 @@ func validMoves(state GameState) []Move {
 						jumpToX := x + (2 * deltaX)
 
 						// Only add this as a possibility if ...
-						// 1) new position is not below bottom of the bord and not two cells off horizontally
-						// 2) new position is not above the top cell or out-of-board on the right-hand side OR
-						// 3) ... new position is above the top of the board and the eliminated pawn is at position {y,0}
-						// 4) new position is above the top of the board OR
-						// 5) ... new position is out-of-board on the right-hand side OR
-						// 6) ... new position is out-of-board on the left-hand side or new position isn't occupied
-						// 7) the cell we jump over is occupied (by anyone, even ourselves)
+						// 1) the cell we jump over is occupied (by anyone, even ourselves)
+						// 2) our new position is on the board or in the limbus between the
+						// strategy board and the scoreboard:
+						//						if state.StrategyBoard[gonerY][gonerX] != 9 &&
+						//							isOnBoard([2]int{jumpToY, jumpToX}) || isInLimbo([2]int{jumpToY, jumpToX}) {
+						//						}
+
+						// Only add this as a possibility if ...
+						// 1) new position is not below bottom of the bord and not two cells off to the left
+
+						// 2) new position is not above the top cell or two cells off to the right OR
+						// 3) ... new position is in limbo at the top of the board and the eliminated pawn is at horizontal position 0
+
+						// 4) new position is in limbo at the top of the board OR
+						// 5) ... new position is in limbo on the right-hand side OR
+						// 6) ... new position is in limbo on the left-hand side OR
+						// 7) new position isn't occupied
+
+						// 8) the cell we jump over is occupied (by anyone, even ourselves)
 						if jumpToY >= 0 && jumpToX >= -1 &&
 							((jumpToY < BoardHeight && jumpToX <= len(state.StrategyBoard[jumpToY])) ||
 								(jumpToY == BoardHeight && gonerX == 0)) &&
 							(jumpToY == BoardHeight ||
 								jumpToX == len(state.StrategyBoard[jumpToY]) ||
-								jumpToX == -1 || state.StrategyBoard[jumpToY][jumpToX] == 9) &&
+								jumpToX == -1 ||
+								state.StrategyBoard[jumpToY][jumpToX] == 9) &&
 							state.StrategyBoard[gonerY][gonerX] != 9 {
 
 							// All conditions OK. Here's tha path that we will use (more than once):
@@ -149,12 +183,13 @@ func validMoves(state GameState) []Move {
 
 							// Create a new game state for this jump:
 							followingGameState := state
-							// Remove the pawn we just jumped over. Remember to put it back among the unused pawns:
+							// Remove the pawn we just jumped over. Remember to put it back among the unused pawns.
+							// We put it back first, while we still have the correct player value in the goner cell:
 							followingGameState.UnusedPawns[followingGameState.StrategyBoard[gonerY][gonerX]]++
 							followingGameState.StrategyBoard[gonerY][gonerX] = 9
 							// remove ourselves:
 							followingGameState.StrategyBoard[y][x] = 9
-							if jumpToX == -1 || jumpToX == len(state.StrategyBoard[jumpToY]) || jumpToY == BoardHeight {
+							if jumpToX == -1 || jumpToY == BoardHeight || jumpToX == len(state.StrategyBoard[jumpToY]) {
 								// We jumped off of the board!, get us into the set of UnusedPawns pawns:
 								followingGameState.UnusedPawns[state.Player.toInt()]++
 							} else {
@@ -175,9 +210,6 @@ func validMoves(state GameState) []Move {
 								// in jumpPath, so let's omit it and append the rest:
 								nextJumpPath := append(jumpPath, followingMoves[i].Path[1:]...)
 								moves = append(moves, Move{state.Player, STRATEGY, nextJumpPath})
-								fmt.Printf("Adding: %s\n", nextJumpPath)
-								fmt.Printf("So we now have: %s\n", moves)
-								fmt.Printf("---\n")
 							}
 
 							// This is where we should recalculate the board state and do a recursive call,
@@ -237,6 +269,10 @@ func suggestBotMove(c *gin.Context) {
 		return
 	}
 	valMoves := validMoves(currStatus)
+	fmt.Printf("currStatus: %s\n", currStatus)
+	fmt.Printf("valMoves: %s\n", valMoves)
+	fmt.Printf("---\n")
+
 	moveInd := rand.Intn(len(valMoves))
 	c.JSON(http.StatusOK, valMoves[moveInd])
 }

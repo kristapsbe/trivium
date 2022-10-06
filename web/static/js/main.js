@@ -97,7 +97,7 @@ function refreshValidMoves(next) {
     }
     $(".curr-turn").removeClass("curr-turn");
     $(`.player-${currState.player}-score .player-${currState.player}-start`).addClass("curr-turn");
-    currState.forceMovePawn = next;
+    //currState.forceMovePawn = next;
     updatePointsScorable();
     $.ajax({
         url: "/availableMoves",
@@ -106,7 +106,7 @@ function refreshValidMoves(next) {
         contentType: "application/json; charset=utf-8",
         success: function(data) {
             if (data.length === 1 && data[0].Path[0][0] !== 9 && (data[0].Path[0] === data[0].Path[2] && data[0].Path[1] === data[0].Path[3])) {
-                //console.log("Here's a situation (we were only given one choice!) ...");
+                console.log("Here's a situation (we were only given one choice!) ...");
                 refreshValidMoves([9, 9]); // since [0] is 9 here, we're not passing on the tour to the next player
             } else {
                 validMoves = data;
@@ -166,7 +166,9 @@ function clickMove(elem) {
     }
     active.removeClass(`player-${currState.player}`);
     active.addClass(`player-${currState.player}-prev`);
-    refreshValidMoves((curr[0] === 9 || Math.abs(curr[0]-next[0]) === 1 || Math.abs(curr[1]-next[1]) === 1) ? [9, 9] : next);
+    console.log("This could have been it:");
+    console.log((curr[0] === 9 || Math.abs(curr[0]-next[0]) === 1 || Math.abs(curr[1]-next[1]) === 1) ? [9, 9] : next);
+    refreshValidMoves([9, 9]);
 }
 
 function doBotMove() {

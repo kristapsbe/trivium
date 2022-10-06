@@ -1,0 +1,17 @@
+POST http://localhost:8080/suggestBotMove
+Content-Type: application/json; charset=utf-8
+
+{
+  "player" : 1,
+  "board" : [
+    [1,2,1,1,1,1],
+     [1,9,0,9,9],
+      [9,9,9,9],
+       [9,9,9],
+        [9,9],
+         [2]
+  ],
+  "unusedPawns" : [ 2, 3, 2 ],
+  "scores" : [ 5, 0, 40 ],
+  "forceMovePawn" : [ 9, 9 ]
+}
