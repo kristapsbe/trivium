@@ -38,10 +38,10 @@ func TestMain(m *testing.M) {
 }
 
 func TestAbs(t *testing.T) {
-	got := abs(-1)
-	if got != 1 {
-		t.Errorf("Abs(-1) = %d; want 1", got)
-	}
+	fmt.Println("Testing our little abs() function")
+	assert.Equal(t, 1, abs(-1))
+	assert.Equal(t, 1, abs(1))
+	assert.Equal(t, 10, abs(-10))
 }
 
 func TestPointsForTopPawn(t *testing.T) {
@@ -62,40 +62,6 @@ func TestPointsForTopPawn(t *testing.T) {
 	if bluePoints != 6 {
 		t.Errorf("Blue really should get six points.")
 	}
-}
-
-func TestIsOnBoard(t *testing.T) {
-	fmt.Println("Testing the isOnBoard function")
-
-	// These should represent all valid positions:
-	validPositions := [21][2]int{{0, 0}, {0, 1}, {0, 2}, {0, 3}, {0, 4}, {0, 5},
-		{1, 0}, {1, 1}, {1, 2}, {1, 3}, {1, 4},
-		{2, 0}, {2, 1}, {2, 2}, {2, 3},
-		{3, 0}, {3, 1}, {3, 2},
-		{4, 0}, {4, 1},
-		{5, 0}}
-
-	for i := range validPositions {
-		assert.True(t, isOnBoard(validPositions[i]),
-			"We believe %v should represent a position on the strategy board!", validPositions[i])
-	}
-
-	// Now let's examine som invalid ones:
-	if isOnBoard([2]int{4, 8}) {
-		t.Errorf("{4, 8} is too far out on the X axis")
-	}
-	if isOnBoard([2]int{6, 0}) {
-		t.Errorf("{6, 0} is too high up on the Y axis")
-	}
-
-	if isOnBoard([2]int{-1, 0}) {
-		t.Errorf("{-1, 0} is under the board")
-	}
-
-	if isOnBoard([2]int{2, -1}) {
-		t.Errorf("{2, -1} is to the left of the board")
-	}
-
 }
 
 func TestIsInLimbo(t *testing.T) {
@@ -141,6 +107,49 @@ func TestIsInLimbo(t *testing.T) {
 		t.Errorf("{2, 5} is too far to the right")
 	}
 
+}
+
+func TestIsOnBoard(t *testing.T) {
+	fmt.Println("Testing the isOnBoard function")
+
+	// These should represent all valid positions:
+	validPositions := [21][2]int{{0, 0}, {0, 1}, {0, 2}, {0, 3}, {0, 4}, {0, 5},
+		{1, 0}, {1, 1}, {1, 2}, {1, 3}, {1, 4},
+		{2, 0}, {2, 1}, {2, 2}, {2, 3},
+		{3, 0}, {3, 1}, {3, 2},
+		{4, 0}, {4, 1},
+		{5, 0}}
+
+	for i := range validPositions {
+		assert.True(t, isOnBoard(validPositions[i]),
+			"We believe %v should represent a position on the strategy board!", validPositions[i])
+	}
+
+	// Now let's examine som invalid ones:
+	if isOnBoard([2]int{4, 8}) {
+		t.Errorf("{4, 8} is too far out on the X axis")
+	}
+	if isOnBoard([2]int{6, 0}) {
+		t.Errorf("{6, 0} is too high up on the Y axis")
+	}
+
+	if isOnBoard([2]int{-1, 0}) {
+		t.Errorf("{-1, 0} is under the board")
+	}
+
+	if isOnBoard([2]int{2, -1}) {
+		t.Errorf("{2, -1} is to the left of the board")
+	}
+
+}
+
+func TestIsEmpty(t *testing.T) {
+	fmt.Println("Testing our little cell emptiness check")
+	assert.Equal(t, true, isEmpty([2]int{0, 0}, gameState))
+	assert.Equal(t, true, isEmpty([2]int{3, 0}, gameState))
+	assert.Equal(t, false, isEmpty([2]int{0, 1}, gameState))
+	// invalid (out-of-board) positions will simply return false:
+	assert.Equal(t, false, isEmpty([2]int{10, 1}, gameState))
 }
 
 func TestValidMoves(t *testing.T) {

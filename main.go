@@ -47,6 +47,12 @@ func isOnBoard(coordinate [2]int) bool {
 		coordinate[1] >= 0 && coordinate[1] < BoardHeight-coordinate[0]
 }
 
+func isEmpty(coordinate [2]int, state GameState) bool {
+	// Instead of handling errors in here as errors,
+	// we simply return *false* if the coordinates are off of the strategy board
+	return isOnBoard(coordinate) && state.StrategyBoard[coordinate[0]][coordinate[1]] == 9
+}
+
 func validMoves(state GameState) []Move {
 	var moves []Move
 
@@ -92,17 +98,10 @@ func validMoves(state GameState) []Move {
 						// we can move to empty cells
 						newY := y + deltaY
 						newX := x + deltaX
+						newCell := [2]int{newY, newX}
 
-						// Valid move conditions (same order as in the underneath if clause):
-						// 1) X and Y coordinates cannot be negative
-						// 2) The new Y cannot be above the height of the board
-						// 3) The new X cannot be a value larger than the concerned row length, and
-						// 4) The target board cell must not already be occupied by another pawn
-						if newY >= 0 && newX >= 0 &&
-							newY < BoardHeight &&
-							newX < len(state.StrategyBoard[newY]) &&
-							state.StrategyBoard[newY][newX] == 9 {
-							path := [][2]int{{y, x}, {newY, newX}}
+						if isEmpty(newCell, state) {
+							path := [][2]int{{y, x}, newCell}
 							moves = append(moves, Move{state.Player, STRATEGY, path})
 						}
 					}
@@ -110,47 +109,23 @@ func validMoves(state GameState) []Move {
 					// Now check if we can jump over some adjacent pawn
 					// (conditions in the same order as the lines in the underneath if clause):
 					// 1) Jump direction is not downwards
-					// 2) We've not already made a jump, OR
-					// 3) The current pawn (given by current {y,x}) is the one in the middle of a jump series
+					// 2) We're not in the middle of a jump series (so the ForceMove coordinates will be 9,9), OR
+					// 3) The current pawn is the one in the middle of a jump series
+					// The condition 2/3 is needed in recursive calls to make sure we only consider the "correct" pawn
 					if deltaY != -1 &&
 						(state.ForceMovePawn[0] == 9 ||
 							(state.ForceMovePawn[0] == y && state.ForceMovePawn[1] == x)) {
 						gonerY := y + deltaY
 						gonerX := x + deltaX
+						gonerCell := [2]int{gonerY, gonerX}
 						jumpToY := y + (2 * deltaY)
 						jumpToX := x + (2 * deltaX)
+						jumpToCell := [2]int{jumpToY, jumpToX}
 
-						// Only add this as a possibility if ...
-						// 1) the cell we jump over is occupied (by anyone, even ourselves)
-						// 2) our new position is on the board or in the limbo between the
-						// strategy board and the scoreboard:
-						//						if state.StrategyBoard[gonerY][gonerX] != 9 &&
-						//							isOnBoard([2]int{jumpToY, jumpToX}) || isInLimbo([2]int{jumpToY, jumpToX}) {
-						//						}
+						if !isEmpty(gonerCell, state) && (isEmpty(jumpToCell, state) || isInLimbo(jumpToCell)) {
 
-						// Only add this as a possibility if ...
-						// 1) new position is not below bottom of the bord and not two cells off to the left
-
-						// 2) new position is not above the top cell or two cells off to the right OR
-						// 3) ... new position is in limbo at the top of the board and the eliminated pawn is at horizontal position 0
-
-						// 4) new position is in limbo at the top of the board OR
-						// 5) ... new position is in limbo on the right-hand side OR
-						// 6) ... new position is in limbo on the left-hand side OR
-						// 7) new position isn't occupied
-
-						// 8) the cell we jump over is occupied (by anyone, even ourselves)
-						if jumpToY >= 0 && jumpToX >= -1 &&
-							((jumpToY < BoardHeight && jumpToX <= len(state.StrategyBoard[jumpToY])) ||
-								(jumpToY == BoardHeight && gonerX == 0)) &&
-							(jumpToY == BoardHeight ||
-								jumpToX == len(state.StrategyBoard[jumpToY]) ||
-								jumpToX == -1 ||
-								state.StrategyBoard[jumpToY][jumpToX] == 9) &&
-							state.StrategyBoard[gonerY][gonerX] != 9 {
-
-							// All conditions OK. Here's tha path that we will use (more than once):
-							jumpPath := [][2]int{{y, x}, {jumpToY, jumpToX}}
+							// All conditions OK. Here's the path that we will use (more than once):
+							jumpPath := [][2]int{{y, x}, jumpToCell}
 
 							// Now get rid of that pesky pawn
 							moves = append(moves, Move{state.Player, STRATEGY, jumpPath})
