@@ -16,32 +16,7 @@ func abs(a int) int {
 	return a
 }
 
-func getDelta(currX int, nextX int) int {
-	if currX < nextX {
-		return 1
-	} else if currX > nextX {
-		return -1
-	}
-	return 0
-}
-
-func printBoard(board [6][]int) {
-	for i := range board {
-		fmt.Printf("%v -> ", i)
-		for j := range board[i] {
-			fmt.Printf("%v ", board[i][j])
-		}
-		fmt.Printf("\n")
-	}
-}
-
-func printScores(scores [3]int) {
-	for v := range scores {
-		fmt.Printf("%v -> %v/%v\n", v, scores[v], TargetScore)
-	}
-}
-
-func movePoints(board [6][]int, player Player) int {
+func pointsForTopPawn(board [6][]int, player Player) int {
 	for i := len(board) - 1; i >= 0; i-- {
 		for j := range board[i] {
 			if Player(board[i][j]) == player {
@@ -54,7 +29,7 @@ func movePoints(board [6][]int, player Player) int {
 
 // Determines if a given cell coordinate is in the limbo between the outer score board
 // and the inner strategy board. This will be the case if the X value is -1 or equal to
-// the length of the array representing the given row, or if the Y values is equal to the
+// the length of the array representing the given row, or if the Y value is equal to the
 // length of the strategy board itself.
 func isInLimbo(coordinate [2]int) bool {
 	// If Y is within the board, check X:
@@ -64,8 +39,7 @@ func isInLimbo(coordinate [2]int) bool {
 
 	// So Y is not within board. To be on the limbo now, the cell
 	// must have Y equal to BoardHeight and X within the board.
-	return coordinate[0] == BoardHeight &&
-		coordinate[1] >= 0 && coordinate[1] < BoardHeight-coordinate[0]
+	return coordinate[0] == BoardHeight && (coordinate[1] == -1 || coordinate[1] == -0)
 }
 
 func isOnBoard(coordinate [2]int) bool {
@@ -91,7 +65,7 @@ func validMoves(state GameState) []Move {
 
 		if state.UnusedPawns[state.Player] < 3 {
 			// we have at least one piece on the board already - can we just take points?
-			if movePoints(state.StrategyBoard, state.Player) <= TargetScore-state.ProgressBoard[state.Player] {
+			if pointsForTopPawn(state.StrategyBoard, state.Player) <= TargetScore-state.ProgressBoard[state.Player] {
 				// The final move has to end _exactly_ at TargetScore. (Can't move 6 to go from 57 to 60.)
 				moves = append(moves, Move{state.Player, SCORE, [][2]int{{9, 9}, {9, 9}}})
 				// path coordinates 9,9,9,9 is shorthand for "take points on the score board"
@@ -204,10 +178,10 @@ func validMoves(state GameState) []Move {
 
 							// Now that we have imagined what the board state would be with this move, let's get its
 							// followup alternatives:
-							fmt.Printf("we *are* in             this state: %v\n", state)
-							fmt.Printf("we *ask* for moves from this state: %v\n", followingGameState)
+							// fmt.Printf("we *are* in             this state: %v\n", state)
+							// fmt.Printf("we *ask* for moves from this state: %v\n", followingGameState)
 							followingMoves := validMoves(followingGameState)
-							fmt.Printf("... and the (recursively retrieved) valid moves seem to be: %v\n", followingMoves)
+							// fmt.Printf("... and the (recursively retrieved) valid moves seem to be: %v\n", followingMoves)
 							// But all of those moves depart from that other board state, so we need to append them to
 							// the current:
 							for i := 0; i < len(followingMoves); i++ {

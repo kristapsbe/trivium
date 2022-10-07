@@ -97,7 +97,7 @@ func (state GameState) Copy() GameState {
 		ProgressBoard: state.ProgressBoard,
 		UnusedPawns:   state.UnusedPawns,
 		ForceMovePawn: state.ForceMovePawn,
-		AfterTurnNo:   state.AfterTurnNo,
+		AfterTurnNo:   state.AfterTurnNo, // not yet implemented
 	}
 }
 
