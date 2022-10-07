@@ -16,11 +16,14 @@ func abs(a int) int {
 	return a
 }
 
-func pointsForTopPawn(board [6][]int, player Player) int {
-	for i := len(board) - 1; i >= 0; i-- {
-		for j := range board[i] {
-			if Player(board[i][j]) == player {
-				return i + 1
+func availableScorePoints(strategyBoard [6][]int, scoreBoard [3]int, player Player) int {
+	// The final move has to end _exactly_ at TargetScore. (Can't move 6 to go from 57 to 60.)
+	for y := len(strategyBoard) - 1; y >= 0; y-- {
+		if y <= TargetScore-scoreBoard[player] {
+			for x := range strategyBoard[y] {
+				if Player(strategyBoard[y][x]) == player {
+					return y + 1
+				}
 			}
 		}
 	}
@@ -71,7 +74,7 @@ func validMoves(state GameState) []Move {
 
 		if state.UnusedPawns[state.Player] < 3 {
 			// we have at least one piece on the board already - can we just take points?
-			if pointsForTopPawn(state.StrategyBoard, state.Player) <= TargetScore-state.ProgressBoard[state.Player] {
+			if availableScorePoints(state.StrategyBoard, state.ScoreBoard, state.Player) > 0 {
 				// The final move has to end _exactly_ at TargetScore. (Can't move 6 to go from 57 to 60.)
 				moves = append(moves, Move{state.Player, SCORE, [][2]int{{9, 9}, {9, 9}}})
 				// path coordinates 9,9,9,9 is shorthand for "take points on the score board"
@@ -196,7 +199,7 @@ func initializeGame(c *gin.Context) {
 	initialState := GameState{
 		Player:        RED,
 		StrategyBoard: EmptyStrategyBoard(),
-		ProgressBoard: [3]int{0, 0, 0},
+		ScoreBoard:    [3]int{0, 0, 0},
 		UnusedPawns:   [3]int{3, 3, 3},
 		ForceMovePawn: [2]int{9, 9},
 		AfterTurnNo:   0,

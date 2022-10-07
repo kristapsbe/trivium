@@ -24,7 +24,7 @@ func (b Board) String() string {
 	case STRATEGY:
 		return "Strategy board"
 	case SCORE:
-		return "Progress board"
+		return "Scoreboard"
 	default:
 		return fmt.Sprintf("Unknown(%d)", b)
 	}
@@ -72,7 +72,7 @@ type Game struct {
 type GameState struct {
 	Player        Player   `json:"player"`
 	StrategyBoard [6][]int `json:"board"`
-	ProgressBoard [3]int   `json:"scores"`
+	ScoreBoard    [3]int   `json:"scores"`
 	UnusedPawns   [3]int   `json:"unusedPawns"`
 	ForceMovePawn [2]int   `json:"forceMovePawn"`
 	AfterTurnNo   int      `json:"afterTurnNo"`
@@ -80,7 +80,7 @@ type GameState struct {
 
 func (state GameState) String() string {
 	return fmt.Sprintf("State { Turn no #%d / Player: %s / ForceMove: %v / Unused: %v / Score: %v / Board: %v }",
-		state.AfterTurnNo, state.Player, state.ForceMovePawn, state.UnusedPawns, state.ProgressBoard, state.StrategyBoard)
+		state.AfterTurnNo, state.Player, state.ForceMovePawn, state.UnusedPawns, state.ScoreBoard, state.StrategyBoard)
 }
 
 func (state GameState) Copy() GameState {
@@ -94,7 +94,7 @@ func (state GameState) Copy() GameState {
 			{state.StrategyBoard[4][0], state.StrategyBoard[4][1]},
 			{state.StrategyBoard[5][0]},
 		},
-		ProgressBoard: state.ProgressBoard,
+		ScoreBoard:    state.ScoreBoard,
 		UnusedPawns:   state.UnusedPawns,
 		ForceMovePawn: state.ForceMovePawn,
 		AfterTurnNo:   state.AfterTurnNo, // not yet implemented

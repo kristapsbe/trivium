@@ -27,7 +27,7 @@ func TestMain(m *testing.M) {
 	gameState = GameState{
 		Player:        RED,
 		StrategyBoard: gameBoard,
-		ProgressBoard: [3]int{59, 55, 56},
+		ScoreBoard:    [3]int{59, 55, 57},
 		UnusedPawns:   [3]int{0, 0, 2}, // since we just placed three pawns on the board
 		ForceMovePawn: [2]int{9, 9},
 		AfterTurnNo:   0,
@@ -44,13 +44,13 @@ func TestAbs(t *testing.T) {
 	assert.Equal(t, 10, abs(-10))
 }
 
-func TestPointsForTopPawn(t *testing.T) {
+func TestAvailableScorePoints(t *testing.T) {
 	// Red can win:
-	redPoints := pointsForTopPawn(gameState.StrategyBoard, 0)
-	greenPoints := pointsForTopPawn(gameState.StrategyBoard, 1)
-	bluePoints := pointsForTopPawn(gameState.StrategyBoard, 2)
+	redPoints := availableScorePoints(gameState.StrategyBoard, gameState.ScoreBoard, 0)
+	greenPoints := availableScorePoints(gameState.StrategyBoard, gameState.ScoreBoard, 1)
+	bluePoints := availableScorePoints(gameState.StrategyBoard, gameState.ScoreBoard, 2)
 
-	fmt.Printf("Testing points for top pawn. (Red: %d, Green: %d, Blue: %d)\n",
+	fmt.Printf("Testing available score points. (Red: %d, Green: %d, Blue: %d)\n",
 		redPoints, greenPoints, bluePoints)
 
 	if redPoints != 1 {
@@ -59,8 +59,8 @@ func TestPointsForTopPawn(t *testing.T) {
 	if greenPoints != 5 {
 		t.Errorf("Green really should get five points.")
 	}
-	if bluePoints != 6 {
-		t.Errorf("Blue really should get six points.")
+	if bluePoints != 0 {
+		t.Errorf("Blue really shouldn't get any points. The pawn has gone too far up (hybris!)")
 	}
 }
 
