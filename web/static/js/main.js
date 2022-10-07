@@ -114,6 +114,9 @@ function refreshValidMoves(next) {
                     setActive($(`.i${currState.forceMovePawn[0]}.j${currState.forceMovePawn[1]}`)[0]);
                 }
             }
+        },
+        error: function(_, _, _) {
+            gameOver = true;
         }
     });
 }
@@ -137,6 +140,7 @@ function clickMove(elem) {
 
     $(`.i${next[0]}.j${next[1]}`).addClass(`player-${currState.player}-prev`);
     if (curr[0] === -1) {
+        alert("I don't get it. Kristaps, what's happening here?");
         curr = next;
     }
     if (curr[0] === 9) {
@@ -144,21 +148,28 @@ function clickMove(elem) {
         currState.board[next[0]][next[1]] = currState.player;
         $(elem).addClass(`player-${currState.player}`);
     } else {
-        currState.board[curr[0]][curr[1]] = 9;
-        if (next[0] < 0 || next[0] >= currState.board.length || next[1] < 0 || next[1] >= currState.board[next[0]].length) {
+        currState.board[curr[0]][curr[1]] = 9; // removed from current position
+        if (next[0] < 0 || next[0] >= currState.board.length ||
+            next[1] < 0 || next[1] >= currState.board[next[0]].length) {
+            // New position is in limbo
+            // Remove pawn from curren state's board:
             currState.unusedPawns[currState.player]++;
+            // Add a pawn to the bottom limbo line of unused pawns:
             $(`.player-${currState.player}-start:not(.player-${currState.player}):last`).addClass(`player-${currState.player}`);
         } else {
+            // New position is on board
             currState.board[next[0]][next[1]] = currState.player;
             $(elem).addClass(`player-${currState.player}`);
         }
+        // New positions are now occupied. Time to remove a pawn, if we jumped over one:
         if (Math.abs(curr[0]-next[0]) > 1 || Math.abs(curr[1]-next[1]) > 1) {
             const temp = [curr[0] + getDelta(curr[0], next[0]), curr[1] + getDelta(curr[1], next[1])];
-            if (currState.board[temp[0]][temp[1]] !== currState.player) {
-                currState.unusedPawns[currState.board[temp[0]][temp[1]]]++;
+            const goner = currState.board[temp[0]][temp[1]];
+            if (goner !== currState.player) {
+                currState.unusedPawns[goner]++;
                 const prev = $(`.i${temp[0]}.j${temp[1]}`);
-                prev.addClass(`player-${currState.board[temp[0]][temp[1]]}-prev`);
-                $(`.player-${currState.board[temp[0]][temp[1]]}-start:not(.player-${currState.board[temp[0]][temp[1]]}):last`).addClass(`player-${currState.board[temp[0]][temp[1]]}`).addClass(`player-${currState.board[temp[0]][temp[1]]}-prev`);
+                prev.addClass(`player-${goner}-prev`);
+                $(`.player-${goner}-start:not(.player-${goner}):last`).addClass(`player-${goner}`).addClass(`player-${goner}-prev`);
                 currState.board[temp[0]][temp[1]] = 9;
                 prev.removeClass('player-0').removeClass('player-1').removeClass('player-2');
             }
@@ -166,9 +177,6 @@ function clickMove(elem) {
     }
     active.removeClass(`player-${currState.player}`);
     active.addClass(`player-${currState.player}-prev`);
-    console.log("This could have been it:");
-    console.log((curr[0] === 9 || Math.abs(curr[0]-next[0]) === 1 || Math.abs(curr[1]-next[1]) === 1) ? [9, 9] : next);
-    refreshValidMoves([9, 9]);
 }
 
 function doBotMove() {
@@ -186,17 +194,35 @@ function doBotMove() {
             const path = move.Path;
             if (path[0] === path[1]) {
                 // a bot is allowed to stop multi-moves early
-                console.log(`${currState.player} - stop early`);
+                console.log(`${currState.player} - stop early - THIS CAN NO LONGER OCCUR! HELP! WHAT HAPPENED?`);
                 refreshValidMoves([9, 9]);
             } else {
-                if (path[0][0] === 9) {
-                    $(`.player-${currState.player}-start.player-${currState.player}:last`).addClass("active");
-                } else {
-                    $(`.i${path[0][0]}.j${path[0][1]}`).addClass("active");
+                if (path[0][0] === 9 && path.length !== 2) {
+                    console.error("When entering the board, one should not be able mo move further!")
                 }
-                clickMove($(`.i${path[1][0]}.j${path[1][1]}`));
+
+                function setActiveAndCallClickMove(index) {
+                    if (path[index][0] === 9) {
+                        // Moving a pawn into the board
+                        $(`.player-${currState.player}-start.player-${currState.player}:last`).addClass("active");
+                    } else {
+                        $(`.i${path[index][0]}.j${path[index][1]}`).addClass("active");
+                    }
+                    clickMove($(`.i${path[index+1][0]}.j${path[index+1][1]}`));
+                }
+
+                for (let i = 0; i < path.length-1; i++) {
+                    console.log(`${currState.player} - no of moves in move: ${path.length-1} (and now we're at #${i+1})`);
+                    setActiveAndCallClickMove(i);
+                    //console.log(`  ... and after moving we have these pawns in the game: ${}`);
+                }
+                refreshValidMoves([9, 9]);
+                console.log(`${currState.player} - turn taken. Board is now thus:`);
+                console.dir(currState.board);
             }
-            console.log(`${currState.player} - turn taken`);
+        },
+        error: function(_, _, _) {
+            gameOver = true;
         }
     });
 }
@@ -260,6 +286,9 @@ body.on('click', ".player-0, .player-1, .player-2", function () {
 body.on('click', '.player-0-target, .player-1-target, .player-2-target', function () {
     if (!botPlayers.includes(currState.player)) {
         clickMove($(this));
+        refreshValidMoves([9, 9]);
+    } else {
+        alert("Please do not interfere while the bot is thinking!")
     }
 });
 

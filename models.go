@@ -19,7 +19,7 @@ const (
 	SCORE
 )
 
-func (b Board) toString() string {
+func (b Board) String() string {
 	switch b {
 	case STRATEGY:
 		return "Strategy board"
@@ -38,7 +38,7 @@ const (
 	BLUE
 )
 
-func (p Player) toString() string {
+func (p Player) String() string {
 	switch p {
 	case RED:
 		return "Red"
@@ -78,9 +78,40 @@ type GameState struct {
 	AfterTurnNo   int      `json:"afterTurnNo"`
 }
 
+func (state GameState) String() string {
+	return fmt.Sprintf("State { Turn no #%d / Player: %s / ForceMove: %v / Unused: %v / Score: %v / Board: %v }",
+		state.AfterTurnNo, state.Player, state.ForceMovePawn, state.UnusedPawns, state.ProgressBoard, state.StrategyBoard)
+}
+
+func (state GameState) Copy() GameState {
+	return GameState{
+		Player: state.Player,
+		StrategyBoard: [BoardHeight][]int{
+			{state.StrategyBoard[0][0], state.StrategyBoard[0][1], state.StrategyBoard[0][2], state.StrategyBoard[0][3], state.StrategyBoard[0][4], state.StrategyBoard[0][5]},
+			{state.StrategyBoard[1][0], state.StrategyBoard[1][1], state.StrategyBoard[1][2], state.StrategyBoard[1][3], state.StrategyBoard[1][4]},
+			{state.StrategyBoard[2][0], state.StrategyBoard[2][1], state.StrategyBoard[2][2], state.StrategyBoard[2][3]},
+			{state.StrategyBoard[3][0], state.StrategyBoard[3][1], state.StrategyBoard[3][2]},
+			{state.StrategyBoard[4][0], state.StrategyBoard[4][1]},
+			{state.StrategyBoard[5][0]},
+		},
+		ProgressBoard: state.ProgressBoard,
+		UnusedPawns:   state.UnusedPawns,
+		ForceMovePawn: state.ForceMovePawn,
+		AfterTurnNo:   state.AfterTurnNo,
+	}
+}
+
 type Move struct {
 	Player Player
 	Board  Board
 	Path   [][2]int // Any number of coordinates for the strategy board, but
 	// if StrategyBoard is SCORE, there will only be two Path ints: the FROM and the TO
+}
+
+func (move Move) String() string {
+	if move.Board == SCORE {
+		return fmt.Sprintf("Move { Player: %s / Take points }", move.Player)
+	}
+
+	return fmt.Sprintf("Move { Player: %s / Path: %v}", move.Player, move.Path)
 }

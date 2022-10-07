@@ -52,7 +52,7 @@ func movePoints(board [6][]int, player Player) int {
 	return 0
 }
 
-// Determines if a given cell coordinate is in the limbus between the outer score board
+// Determines if a given cell coordinate is in the limbo between the outer score board
 // and the inner strategy board. This will be the case if the X value is -1 or equal to
 // the length of the array representing the given row, or if the Y values is equal to the
 // length of the strategy board itself.
@@ -62,8 +62,8 @@ func isInLimbo(coordinate [2]int) bool {
 		return coordinate[1] == -1 || coordinate[1] == BoardHeight-coordinate[0]
 	}
 
-	// So Y is not within board. To be on the limbus now, the cell
-	// must have Y equal to BoardHeight and X within the borad.
+	// So Y is not within board. To be on the limbo now, the cell
+	// must have Y equal to BoardHeight and X within the board.
 	return coordinate[0] == BoardHeight &&
 		coordinate[1] >= 0 && coordinate[1] < BoardHeight-coordinate[0]
 }
@@ -76,7 +76,7 @@ func isOnBoard(coordinate [2]int) bool {
 func validMoves(state GameState) []Move {
 	var moves []Move
 
-	// If ForceMovePawn[0] is 9, it means this is a request for all possible moves for all three pawns
+	// If ForceMovePawn[0] is 9, it means this is a request for moving a pawn from limbo onto the board
 	if state.ForceMovePawn[0] == 9 {
 
 		if state.UnusedPawns[state.Player] > 0 {
@@ -148,7 +148,7 @@ func validMoves(state GameState) []Move {
 
 						// Only add this as a possibility if ...
 						// 1) the cell we jump over is occupied (by anyone, even ourselves)
-						// 2) our new position is on the board or in the limbus between the
+						// 2) our new position is on the board or in the limbo between the
 						// strategy board and the scoreboard:
 						//						if state.StrategyBoard[gonerY][gonerX] != 9 &&
 						//							isOnBoard([2]int{jumpToY, jumpToX}) || isInLimbo([2]int{jumpToY, jumpToX}) {
@@ -181,10 +181,12 @@ func validMoves(state GameState) []Move {
 							// Now get rid of that pesky pawn
 							moves = append(moves, Move{state.Player, STRATEGY, jumpPath})
 
-							// Create a new game state for this jump:
-							followingGameState := state
+							// Create the game state representing the state after this jump:
+							followingGameState := state.Copy()
+
 							// Remove the pawn we just jumped over. Remember to put it back among the unused pawns.
-							// We put it back first, while we still have the correct player value in the goner cell:
+							// We put it back on the limbo line first, before we empty the board cell, while we
+							// still have the correct player value in that cell:
 							followingGameState.UnusedPawns[followingGameState.StrategyBoard[gonerY][gonerX]]++
 							followingGameState.StrategyBoard[gonerY][gonerX] = 9
 							// remove ourselves:
@@ -197,12 +199,15 @@ func validMoves(state GameState) []Move {
 								followingGameState.StrategyBoard[jumpToY][jumpToX] = state.Player.toInt()
 							}
 							// Finally, let's make it clear that our next request concerns follow-ups from a jump
-							// (using the ForceMovePawn setting):
+							// using the ForceMovePawn setting. This setting will only be used in recursive calls:
 							followingGameState.ForceMovePawn = [2]int{jumpToY, jumpToX}
 
 							// Now that we have imagined what the board state would be with this move, let's get its
 							// followup alternatives:
+							fmt.Printf("we *are* in             this state: %v\n", state)
+							fmt.Printf("we *ask* for moves from this state: %v\n", followingGameState)
 							followingMoves := validMoves(followingGameState)
+							fmt.Printf("... and the (recursively retrieved) valid moves seem to be: %v\n", followingMoves)
 							// But all of those moves depart from that other board state, so we need to append them to
 							// the current:
 							for i := 0; i < len(followingMoves); i++ {
@@ -238,7 +243,7 @@ func main() {
 
 func initializeGame(c *gin.Context) {
 	gameId := uuid.New()
-	//fmt.Println("New game: " + gameId.String())
+	// fmt.Println("New game: " + gameId.String())
 	initialState := GameState{
 		Player:        RED,
 		StrategyBoard: EmptyStrategyBoard(),
@@ -270,9 +275,7 @@ func suggestBotMove(c *gin.Context) {
 	}
 	valMoves := validMoves(currStatus)
 	fmt.Printf("currStatus: %s\n", currStatus)
-	fmt.Printf("valMoves: %s\n", valMoves)
-	fmt.Printf("---\n")
-
 	moveInd := rand.Intn(len(valMoves))
+	fmt.Printf("suggested move: %s\n", valMoves[moveInd])
 	c.JSON(http.StatusOK, valMoves[moveInd])
 }

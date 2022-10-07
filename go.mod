@@ -8,6 +8,7 @@ require (
 )
 
 require (
+	github.com/davidwalter0/go-clone v0.0.0-20170423003934-37313ed49ede // indirect
 	github.com/gin-contrib/sse v0.1.0 // indirect
 	github.com/go-playground/locales v0.14.0 // indirect
 	github.com/go-playground/universal-translator v0.18.0 // indirect
