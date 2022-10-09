@@ -212,7 +212,7 @@ function doBotMove() {
                 refreshValidMoves([9, 9]);
             } else {
                 if (path[0][0] === 9 && path.length !== 2) {
-                    console.error("When entering the board, one should not be able mo move further!")
+                    console.error("When entering the board, one should not be able to move further!")
                 }
 
                 function setActiveAndCallClickMove(index) {

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math/rand"
 	"net/http"
+	"os"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -208,11 +209,11 @@ func initializeGame(c *gin.Context) {
 }
 
 func availableMoves(c *gin.Context) {
-	var currStatus GameState
-	if err := c.BindJSON(&currStatus); err != nil {
+	var reportedState GameState
+	if err := c.BindJSON(&reportedState); err != nil {
 		return
 	}
-	valMoves := validMoves(currStatus)
+	valMoves := validMoves(reportedState)
 	if len(valMoves) > 0 {
 		c.JSON(http.StatusOK, valMoves)
 	} else {
@@ -221,13 +222,32 @@ func availableMoves(c *gin.Context) {
 }
 
 func suggestBotMove(c *gin.Context) {
-	var currStatus GameState
-	if err := c.BindJSON(&currStatus); err != nil {
+	var reportedState GameState
+	if err := c.BindJSON(&reportedState); err != nil {
 		return
 	}
-	valMoves := validMoves(currStatus)
-	fmt.Printf("currStatus: %s\n", currStatus)
+	valMoves := validMoves(reportedState)
+	fmt.Printf("reportedState: %s\n", reportedState)
+	checkPawnCounts(reportedState)
 	moveInd := rand.Intn(len(valMoves))
 	fmt.Printf("suggested move: %s\n", valMoves[moveInd])
 	c.JSON(http.StatusOK, valMoves[moveInd])
+}
+
+func checkPawnCounts(state GameState) {
+	var y, x, p int
+	for p = 0; p < 3; p++ {
+		var pawnCount int = state.UnusedPawns[p]
+		for y = 0; y < BoardHeight; y++ {
+			for x = 0; x < len(state.StrategyBoard[y]); x++ {
+				if p == state.StrategyBoard[y][x] {
+					pawnCount++
+				}
+			}
+		}
+		if pawnCount != 3 {
+			fmt.Printf("Well, well, well, player %s seems to have %d pawns, all of a sudden!\n", Player(p), pawnCount)
+			os.Exit(10)
+		}
+	}
 }
