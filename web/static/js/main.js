@@ -36,16 +36,44 @@ $('#bot1, #bot2, #bot3').on("change", function() {
     });
 });
 
-/**
- * For a given player, this function returns the number of moves
- * possible on the progress board given the current situation on
- * the strategy board.
- */
-function availableProgressPoints(board, player) {
-    for (let i = board.length-1; i >= 0; i--) {
-        for (let j = 0; j < board.length; j++) {
-            if (board[i][j] === player) {
-                return (i + 1)
+function repaintBoard() {
+    // Given the current state of the game, repaint the whole thing
+
+}
+
+function updatePointsScorable() {
+    for (let p = 0; p < 3; p++) {
+        const points = topPawnScorePointsValue(currState.board, p);
+        $(`.player-${p}-score .player-${p}-start .cell-inner`)[0].innerHTML = points;
+        $(`.player-${p}-score span`)[0].innerHTML = currState.scores[p];
+        const scorable = $(`.player-${p}-score .player-${p}-start`).removeClass("scorable");
+        scorable.removeClass("scorable");
+        $(`.player-${p}-target`).removeClass(`player-${p}-target`);
+        if ((points > 0) && (points+currState.scores[p] <= TARGET_SCORE) && (currState.forceMovePawn[0] === 9)) {
+            scorable.addClass("scorable");
+        }
+    }
+    $(".active").removeClass("active");
+}
+
+function topPawnScorePointsValue(board, player) {
+    for (let y = board.length-1; y >= 0; y--) {
+        for (let x = 0; x < board.length; x++) {
+            if (board[y][x] === player) {
+                return (y + 1)
+            }
+        }
+    }
+    return 0
+}
+
+function availableScorePoints(board, player) {
+    for (let y = board.length-1; y >= 0; y--) {
+        if (y + currState.scores[player] <= TARGET_SCORE && (currState.forceMovePawn[0] === 9)) {
+            for (let x = 0; x < board.length; x++) {
+                if (board[y][x] === player) {
+                    return (y + 1)
+                }
             }
         }
     }
@@ -57,10 +85,10 @@ function getCoords(elem) {
     let currY = 9;
     let currX = 9;
     $.each(classes, function(_, v) {
-        if (v.charAt(0) === 'i') {
+        if (v.charAt(0) === 'y') {
             currY = parseInt(v.substring(1));
         }
-        if (v.charAt(0) === 'j') {
+        if (v.charAt(0) === 'x') {
             currX = parseInt(v.substring(1));
         }
     });
@@ -74,21 +102,6 @@ function getDelta(current, next) {
         return -1;
     }
     return 0;
-}
-
-function updatePointsScorable() {
-    for (let i = 0; i < 3; i++) {
-        const points = availableProgressPoints(currState.board, i);
-        $(`.player-${i}-score .player-${i}-start .cell-inner`)[0].innerHTML = points;
-        $(`.player-${i}-score span`)[0].innerHTML = currState.scores[i];
-        const scorable = $(`.player-${i}-score .player-${i}-start`).removeClass("scorable");
-        scorable.removeClass("scorable");
-        $(`.player-${i}-target`).removeClass(`player-${i}-target`);
-        if ((points > 0) && (points+currState.scores[i] <= TARGET_SCORE) && (currState.forceMovePawn[0] === 9)) {
-            scorable.addClass("scorable");
-        }
-    }
-    $(".active").removeClass("active");
 }
 
 function refreshValidMoves(next) {
@@ -115,7 +128,8 @@ function refreshValidMoves(next) {
                 }
             }
         },
-        error: function(_, _, _) {
+        error: function(_1, _2, _3) {
+            console.log("Received a 500 error from server. Calling it game over.");
             gameOver = true;
         }
     });
@@ -124,7 +138,7 @@ function refreshValidMoves(next) {
 const playerColors = {0: "Red", 1: "Green", 2: "Blue"};
 function clickScore() {
     clearPrevs();
-    currState.scores[currState.player] += availableProgressPoints(currState.board, currState.player);
+    currState.scores[currState.player] += availableScorePoints(currState.board, currState.player);
     if (currState.scores[currState.player] === TARGET_SCORE) {
         alert(`Yay, ${playerColors[currState.player]} wins!`);
         gameOver = true;
