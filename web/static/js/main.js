@@ -124,7 +124,7 @@ function refreshValidMoves(next) {
             } else {
                 validMoves = data;
                 if (next[0] !== 9) {
-                    setActive($(`.i${currState.forceMovePawn[0]}.j${currState.forceMovePawn[1]}`)[0]);
+                    setActive($(`.y${currState.forceMovePawn[0]}.x${currState.forceMovePawn[1]}`)[0]);
                 }
             }
         },
@@ -152,7 +152,7 @@ function clickMove(elem) {
     const active = $(".active");
     let curr = getCoords(active[0]);
 
-    $(`.i${next[0]}.j${next[1]}`).addClass(`player-${currState.player}-prev`);
+    $(`.y${next[0]}.x${next[1]}`).addClass(`player-${currState.player}-prev`);
     if (curr[0] === -1) {
         alert("I don't get it. Kristaps, what's happening here?");
         curr = next;
@@ -181,7 +181,7 @@ function clickMove(elem) {
             const goner = currState.board[temp[0]][temp[1]];
             if (goner !== currState.player) {
                 currState.unusedPawns[goner]++;
-                const prev = $(`.i${temp[0]}.j${temp[1]}`);
+                const prev = $(`.y${temp[0]}.x${temp[1]}`);
                 prev.addClass(`player-${goner}-prev`);
                 $(`.player-${goner}-start:not(.player-${goner}):last`).addClass(`player-${goner}`).addClass(`player-${goner}-prev`);
                 currState.board[temp[0]][temp[1]] = 9;
@@ -220,9 +220,9 @@ function doBotMove() {
                         // Moving a pawn into the board
                         $(`.player-${currState.player}-start.player-${currState.player}:last`).addClass("active");
                     } else {
-                        $(`.i${path[index][0]}.j${path[index][1]}`).addClass("active");
+                        $(`.y${path[index][0]}.x${path[index][1]}`).addClass("active");
                     }
-                    clickMove($(`.i${path[index+1][0]}.j${path[index+1][1]}`));
+                    clickMove($(`.y${path[index+1][0]}.x${path[index+1][1]}`));
                 }
 
                 for (let i = 0; i < path.length-1; i++) {
@@ -261,7 +261,7 @@ function setActive(elem) {
                 const path = move.Path;
                 if (path[0][0] === 9 && path[1][0] !== 9) {
                     // This is for coming onto the board. If first path element is 9,9, the pawn us unused
-                    $(`.i${path[1][0]}.j${path[1][1]}:not(.player-0):not(.player-1):not(.player-2)`).addClass(`player-${currState.player}-target`);
+                    $(`.y${path[1][0]}.x${path[1][1]}:not(.player-0):not(.player-1):not(.player-2)`).addClass(`player-${currState.player}-target`);
                 }
             });
         } else {
@@ -276,7 +276,7 @@ function setActive(elem) {
                         console.log("somehow, to distinguish the different paths, since it will be possible to hit the same")
                         console.log("final cell via different paths ...")
                     }
-                    $(`.i${path[1][0]}.j${path[1][1]}:not(.player-0):not(.player-1):not(.player-2)`).addClass(`player-${currState.player}-target`);
+                    $(`.y${path[1][0]}.x${path[1][1]}:not(.player-0):not(.player-1):not(.player-2)`).addClass(`player-${currState.player}-target`);
                 }
             });
         }
