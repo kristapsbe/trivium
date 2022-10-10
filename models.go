@@ -1,6 +1,9 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+	"github.com/google/uuid"
+)
 
 const TargetScore = 60
 
@@ -65,8 +68,9 @@ func (p Player) toInt() int {
 }
 
 type Game struct {
-	GameId string    `json:"gameId"`
-	State  GameState `json:"GameState"`
+	GameId       uuid.UUID        `json:"gameId"`
+	State        GameState        `json:"gameState"`
+	Participants map[Player]AiBot `json:"participants"`
 }
 
 type GameState struct {
@@ -112,6 +116,10 @@ func (move Move) String() string {
 	if move.Board == SCORE {
 		return fmt.Sprintf("Move { Player: %s / Take points }", move.Player)
 	}
-
 	return fmt.Sprintf("Move { Player: %s / Path: %v}", move.Player, move.Path)
+}
+
+type AiBot struct {
+	Name   string `json:"botName"`
+	Slogan string `json:"botSlogan"`
 }

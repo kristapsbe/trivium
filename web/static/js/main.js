@@ -38,7 +38,6 @@ $('#bot1, #bot2, #bot3').on("change", function() {
 
 function repaintBoard() {
     // Given the current state of the game, repaint the whole thing
-
 }
 
 function updatePointsScorable() {
@@ -78,6 +77,10 @@ function availableScorePoints(board, player) {
         }
     }
     return 0
+}
+
+function clearPrevs() {
+    $(".cell").removeClass("player-0-prev").removeClass("player-1-prev").removeClass("player-2-prev");
 }
 
 function getCoords(elem) {
@@ -216,6 +219,7 @@ function doBotMove() {
                 }
 
                 function setActiveAndCallClickMove(index) {
+                    clearPrevs()
                     $(".active").removeClass("active");
                     if (path[index][0] === 9) {
                         // Moving a pawn into the board
@@ -240,10 +244,6 @@ function doBotMove() {
             gameOver = true;
         }
     });
-}
-
-function clearPrevs() {
-    $(".cell").removeClass("player-0-prev").removeClass("player-1-prev").removeClass("player-2-prev");
 }
 
 function setActive(elem) {

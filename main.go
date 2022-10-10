@@ -181,22 +181,8 @@ func validMoves(state GameState) []Move {
 	return moves
 }
 
-func main() {
-	r := gin.Default()
-
-	r.Static("/static", "web/static")
-	r.StaticFile("/board", "web/board.html")
-	r.POST("/availableMoves", availableMoves)
-	r.POST("/suggestBotMove", suggestBotMove)
-	r.GET("/newGame", initializeGame)
-
-	//goland:noinspection GoUnhandledErrorResult
-	r.Run(":8080")
-}
-
-func initializeGame(c *gin.Context) {
+func InitializeNewGame() {
 	gameId := uuid.New()
-	// fmt.Println("New game: " + gameId.String())
 	initialState := GameState{
 		Player:        RED,
 		StrategyBoard: EmptyStrategyBoard(),
@@ -205,7 +191,47 @@ func initializeGame(c *gin.Context) {
 		ForceMovePawn: [2]int{9, 9},
 		AfterTurnNo:   0,
 	}
-	c.JSON(http.StatusOK, Game{gameId.String(), initialState})
+	participants := map[Player]AiBot{}
+	waitingGame = Game{gameId, initialState, participants}
+	fmt.Printf("Created a new game: %v. Should we add Simen as RED immediately?\n", gameId)
+}
+
+func main() {
+	r := gin.Default()
+
+	connectToDb()
+
+	r.Static("/static", "web/static")
+	r.StaticFile("/board", "web/board.html")
+	r.POST("/availableMoves", availableMoves)
+	r.POST("/suggestBotMove", suggestBotMove)
+	r.GET("/joinGame", joinGame)
+
+	//goland:noinspection GoUnhandledErrorResult
+	r.Run(":8080")
+}
+
+// We should have the same message returned from here no matter how many participants.
+// Then keep a websocket and alert all three with the waitingGame once three players are in.
+func joinGame(c *gin.Context) {
+	var incomingBot AiBot
+	if err := c.BindJSON(&incomingBot); err != nil {
+		return
+	}
+
+	if len(waitingGame.Participants) == 2 {
+		fmt.Println("Hey,we already had two players waiting. Let's play!")
+		waitingGame.Participants[BLUE] = incomingBot
+		ongoingGames = append(ongoingGames, waitingGame)
+		fmt.Println("NOW PUSH A MESSAGE TO RED IN ORDER TO START THE GAME")
+		c.JSON(http.StatusOK, waitingGame)
+		InitializeNewGame()
+		return
+	} else if len(waitingGame.Participants) == 1 {
+		waitingGame.Participants[GREEN] = incomingBot
+	}
+
+	c.JSON(http.StatusTeapot, "I actually am not a teapot. It's just an April's fool.")
 }
 
 func availableMoves(c *gin.Context) {
@@ -251,3 +277,6 @@ func checkPawnCounts(state GameState) {
 		}
 	}
 }
+
+var waitingGame = Game{}
+var ongoingGames []Game
