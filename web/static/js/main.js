@@ -216,6 +216,7 @@ function doBotMove() {
                 }
 
                 function setActiveAndCallClickMove(index) {
+                    $(".active").removeClass("active");
                     if (path[index][0] === 9) {
                         // Moving a pawn into the board
                         $(`.player-${currState.player}-start.player-${currState.player}:last`).addClass("active");
