@@ -1,0 +1,7 @@
+POST http://localhost:8080/joinGame
+Content-Type: application/json; charset=utf-8
+
+{
+  "botName" : "InvinciBot 3",
+  "botSlogan" : "I am also unbeatable"
+}
