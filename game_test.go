@@ -19,7 +19,7 @@ func TestMain(m *testing.M) {
 	gameBoard[0][5] = 0 // red is at the bottom row
 
 	gameBoard[4][0] = 1 // green is at the next-to-top row
-	gameBoard[2][0] = 1 // green is at the next-to-top row
+	gameBoard[2][0] = 1 // green is at the third row
 	gameBoard[1][1] = 1 // ... and at the next-to-bottom row
 
 	gameBoard[5][0] = 2 // blue is lucky ... or actually ...
@@ -44,7 +44,93 @@ func TestAbs(t *testing.T) {
 	assert.Equal(t, 10, abs(-10))
 }
 
+func TestScoreMoves(t *testing.T) {
+	fmt.Println("Testing score moves with the move() function")
+	scoreMove := Move{
+		Player: RED,
+		Board:  SCORE,
+		Path:   [][2]int{{59, 60}},
+	}
+
+	newState, err := move(gameState, scoreMove)
+	assert.Nil(t, err, "Red should be able to score a point")
+	assert.Equal(t, 60, newState.ScoreBoard[0])
+
+	assert.Equal(t, gameState.StrategyBoard, newState.StrategyBoard,
+		"The strategyboard must not change when a player simply takes points")
+
+	assert.Equal(t, gameState.AfterTurnNo+1, newState.AfterTurnNo, "The AfterTurnNo variable should have ben ++ed")
+}
+
+func TestIllegalMoves(t *testing.T) {
+	fmt.Println("Testing illegal moves with the move() function")
+
+	illegalPlayer := Move{
+		Player: GREEN,
+		Board:  STRATEGY,
+		Path:   [][2]int{{4, 0}, {3, 0}},
+	}
+
+	_, err := move(gameState, illegalPlayer)
+	assert.NotNil(t, err, "RED is in turn, not GREEN")
+
+	illegalPath := Move{
+		Player: RED,
+		Board:  STRATEGY,
+		Path:   nil,
+	}
+
+	_, err = move(gameState, illegalPath)
+	assert.NotNil(t, err, "A nil path shouldn't be accepted")
+
+	illegalMove := Move{
+		Player: RED,
+		Board:  STRATEGY,
+		Path:   [][2]int{{4, 0}, {3, 0}},
+	}
+
+	_, err = move(gameState, illegalMove)
+	assert.NotNil(t, err, "Red isn't as {4,0}")
+
+}
+
+func TestSimpleMoves(t *testing.T) {
+	fmt.Println("Testing simple moves with the move() function")
+	legalMove := Move{
+		Player: RED,
+		Board:  STRATEGY,
+		Path:   [][2]int{{0, 2}, {1, 2}},
+	}
+
+	newState, err := move(gameState, legalMove)
+	assert.Nil(t, err, "Red should be able to move {0,2}=>{1,2}")
+	assert.True(t, isEmpty([2]int{0, 2}, newState))
+	assert.Equal(t, gameState.AfterTurnNo+1, newState.AfterTurnNo, "The AfterTurnNo variable should have ben ++ed")
+}
+
+func TestJumpMoves(t *testing.T) {
+	fmt.Println("Testing jump moves with the move() function")
+	greenState := gameState.Copy()
+	greenState.Player = GREEN
+	jumpMove := Move{
+		Player: GREEN,
+		Board:  STRATEGY,
+		Path:   [][2]int{{4, 0}, {6, 0}},
+	}
+
+	newState, err := move(greenState, jumpMove)
+	assert.Nil(t, err, "Green should be able to jump over blue")
+	assert.True(t, isEmpty([2]int{4, 0}, newState), "Green should have left its origin") // greens origin
+	assert.True(t, isEmpty([2]int{5, 0}, newState), "Blue should have been removed")     // blue pawn
+
+	assert.Equal(t, greenState.UnusedPawns[GREEN]+1, newState.UnusedPawns[GREEN], "Green should have one more unused pawn after the move")
+	assert.Equal(t, greenState.UnusedPawns[BLUE]+1, newState.UnusedPawns[BLUE], "Blue should have one more unused pawn after the move")
+
+	assert.Equal(t, greenState.AfterTurnNo+1, newState.AfterTurnNo, "The AfterTurnNo variable should have ben ++ed")
+}
+
 func TestAvailableScorePoints(t *testing.T) {
+	fmt.Println("Testing the availableScorePoints() function")
 	// Red can win:
 	redPoints := availableScorePoints(gameState.StrategyBoard, gameState.ScoreBoard, 0)
 	greenPoints := availableScorePoints(gameState.StrategyBoard, gameState.ScoreBoard, 1)
@@ -145,11 +231,11 @@ func TestIsOnBoard(t *testing.T) {
 
 func TestIsEmpty(t *testing.T) {
 	fmt.Println("Testing our little cell emptiness check")
-	assert.Equal(t, true, isEmpty([2]int{0, 0}, gameState))
-	assert.Equal(t, true, isEmpty([2]int{3, 0}, gameState))
-	assert.Equal(t, false, isEmpty([2]int{0, 1}, gameState))
+	assert.True(t, isEmpty([2]int{0, 0}, gameState))
+	assert.True(t, isEmpty([2]int{3, 0}, gameState))
+	assert.False(t, isEmpty([2]int{0, 1}, gameState))
 	// invalid (out-of-board) positions will simply return false:
-	assert.Equal(t, false, isEmpty([2]int{10, 1}, gameState))
+	assert.False(t, isEmpty([2]int{10, 1}, gameState))
 }
 
 func TestValidMoves(t *testing.T) {
@@ -159,8 +245,8 @@ func TestValidMoves(t *testing.T) {
 	var moves = validMoves(gameState)
 
 	// red should be able to grab a point:
-	assert.Contains(t, moves, Move{0, SCORE, [][2]int{{9, 9}, {9, 9}}},
-		"Player Red should be able to take a point on the score board")
+	assert.Contains(t, moves, Move{0, SCORE, [][2]int{{59, 60}}},
+		"Player Red should be able to take a point (i.e. move 59=>60) on the score board")
 	assert.Equal(t, 11, len(moves), "There should be 9 options for player Red")
 
 	assert.Contains(t, moves, Move{0, STRATEGY, [][2]int{{0, 1}, {2, 1}, {2, -1}}},

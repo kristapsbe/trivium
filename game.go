@@ -24,7 +24,7 @@ func InitializeNewGame() {
 		AfterTurnNo:   0,
 	}
 	participants := map[Player]AiBot{}
-	waitingGame = Game{gameId, initialState, participants}
+	waitingGame = Game{gameId, participants, initialState, nil}
 	waitingGame.Participants[RED] = invinciBot
 	fmt.Printf("Created a new game: %v. Should we add Simen as RED immediately?\n", gameId)
 }
@@ -69,10 +69,130 @@ func isEmpty(coordinate [2]int, state GameState) bool {
 	return isOnBoard(coordinate) && state.StrategyBoard[coordinate[0]][coordinate[1]] == 9
 }
 
+// Given a game state and a move, calculates and returns the following game state
+func move(state GameState, move Move) (GameState, error) {
+
+	if state.Player != move.Player {
+		return state, fmt.Errorf("%v player is in turn (not %v)", state.Player, move.Player)
+	}
+
+	if !move.isIn(validMoves(state)) {
+		return state, fmt.Errorf("move %v is invalid in the current state", move.Path)
+	}
+
+	// Create the game state representing the state after this jump:
+	followingGameState := state.Copy()
+
+	if move.Board == SCORE {
+		// Grab the points:
+		followingGameState.ScoreBoard[move.Player] = move.Path[0][1]
+		followingGameState.AfterTurnNo++
+		return followingGameState, nil
+	}
+
+	// If we get here, we need to move.
+
+	if move.Path[0][0] == 9 && move.Path[0][1] == 9 {
+		// We're entering the board
+		followingGameState.StrategyBoard[move.Path[0][0]][move.Path[0][1]] = move.Player.toInt()
+		followingGameState.UnusedPawns[move.Player]--
+		followingGameState.AfterTurnNo++
+		return followingGameState, nil
+	}
+
+	originY := move.Path[0][0]
+	originX := move.Path[0][1]
+
+	for i := 1; i < len(move.Path); i++ {
+		destinationY := move.Path[i][0]
+		destinationX := move.Path[i][1]
+		deltaX := destinationX - originX
+		deltaY := destinationY - originY
+
+		if deltaY < 2 && abs(deltaX) < 2 {
+			// we are not jumping over a pawn. In this case, we're not either allowed to leave
+			// the board, so we can now just move the pawn and go on to the next path element.
+			followingGameState.StrategyBoard[originY][originX] = 9
+			followingGameState.StrategyBoard[destinationY][destinationX] = move.Player.toInt()
+
+			// no jumping took place, so the pawn cannot move further.
+			// we can simply return from this method:
+			followingGameState.AfterTurnNo++
+			return followingGameState, nil
+		}
+
+		// We seem to have jumped over a pawn. Let's find it:
+		var gonerY, gonerX int
+		if deltaY == 2 {
+			// Jumping upwards.
+			gonerY = originY + 1
+
+			// destinationX will be same as now or 2 less.
+			if deltaX == 0 {
+				// If jumping towards the right, the gonerX will be equal to originX
+				gonerX = originX
+			} else {
+				// If jumping towards the left, the gonerX will be 1 less than originX.
+				gonerX = originX - 1
+			}
+		} else {
+			// Since one cannot jump downwards, deltaY must now be 0.
+			// deltaX can then be 2 or -2, and gonerX will be half of that
+			gonerX = deltaX / 2
+		}
+
+		// Now first augment the number of unused pawns for the concerned player:
+		followingGameState.UnusedPawns[followingGameState.StrategyBoard[gonerY][gonerX]]++
+		// ... and then eliminate the pawn we jumped over:
+		followingGameState.StrategyBoard[gonerY][gonerX] = 9
+
+		// Check if we jumped off of the board:
+		if isInLimbo([2]int{destinationY, destinationX}) {
+			followingGameState.UnusedPawns[move.Player.toInt()]++
+		} else {
+			followingGameState.StrategyBoard[destinationY][destinationX] = move.Player.toInt()
+		}
+
+		// free up the cell we just left:
+		followingGameState.StrategyBoard[originY][originX] = 9
+
+		// and finally (before the next pass in the loop),
+		// set the new origin for the next jump (if any)
+		originY = destinationY
+		originX = destinationX
+
+	} // loop end
+
+	followingGameState.AfterTurnNo++
+	return followingGameState, nil
+}
+
+func (m Move) isIn(validMoves []Move) bool {
+outerLoop:
+	for _, validMove := range validMoves {
+		if len(validMove.Path) != len(m.Path) ||
+			validMove.Player != m.Player ||
+			validMove.Board != m.Board {
+			continue
+		}
+
+		for i, p := range validMove.Path {
+			if p != m.Path[i] {
+				continue outerLoop
+			}
+		}
+		// last statement in outerLoop. If we've made it through to here,
+		// this validMove item is equal to m, so:
+		return true
+	}
+	// got through the whole slice without finding m
+	return false
+}
+
 func validMoves(state GameState) []Move {
 	var moves []Move
 
-	// If ForceMovePawn[0] is 9, it means this is a request for moving a pawn from limbo onto the board
+	// If ForceMovePawn[0] is 9, we're not in the middle of a jump path
 	if state.ForceMovePawn[0] == 9 {
 
 		if state.UnusedPawns[state.Player] > 0 {
@@ -87,9 +207,11 @@ func validMoves(state GameState) []Move {
 
 		if state.UnusedPawns[state.Player] < 3 {
 			// we have at least one piece on the board already - can we just take points?
-			if availableScorePoints(state.StrategyBoard, state.ScoreBoard, state.Player) > 0 {
+			availableScorePoints := availableScorePoints(state.StrategyBoard, state.ScoreBoard, state.Player)
+			if availableScorePoints > 0 {
 				// The final move has to end _exactly_ at TargetScore. (Can't move 6 to go from 57 to 60.)
-				moves = append(moves, Move{state.Player, SCORE, [][2]int{{9, 9}, {9, 9}}})
+				currentScore := state.ScoreBoard[state.Player]
+				moves = append(moves, Move{state.Player, SCORE, [][2]int{{currentScore, currentScore + availableScorePoints}}})
 				// path coordinates 9,9,9,9 is shorthand for "take points on the score board"
 			}
 		}
@@ -154,7 +276,7 @@ func validMoves(state GameState) []Move {
 							// still have the correct player value in that cell:
 							followingGameState.UnusedPawns[followingGameState.StrategyBoard[gonerY][gonerX]]++
 							followingGameState.StrategyBoard[gonerY][gonerX] = 9
-							// remove ourselves:
+							// remove ourselves from our previous position:
 							followingGameState.StrategyBoard[y][x] = 9
 							if jumpToX == -1 || jumpToY == BoardHeight || jumpToX == len(state.StrategyBoard[jumpToY]) {
 								// We jumped off of the board!, get us into the set of UnusedPawns pawns:
@@ -197,7 +319,7 @@ func validMoves(state GameState) []Move {
 func checkPawnCounts(state GameState) {
 	var y, x, p int
 	for p = 0; p < 3; p++ {
-		var pawnCount int = state.UnusedPawns[p]
+		var pawnCount = state.UnusedPawns[p]
 		for y = 0; y < BoardHeight; y++ {
 			for x = 0; x < len(state.StrategyBoard[y]); x++ {
 				if p == state.StrategyBoard[y][x] {

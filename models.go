@@ -9,8 +9,7 @@ const TargetScore = 60
 
 const BoardHeight = 6
 
-// Arrays cannot be constants in Go, so the following function is pro forma:
-
+// EmptyStrategyBoard Arrays cannot be constants in Go, so the following function is pro forma:
 func EmptyStrategyBoard() [BoardHeight][]int {
 	return [BoardHeight][]int{{9, 9, 9, 9, 9, 9}, {9, 9, 9, 9, 9}, {9, 9, 9, 9}, {9, 9, 9}, {9, 9}, {9}}
 }
@@ -69,8 +68,9 @@ func (p Player) toInt() int {
 
 type Game struct {
 	GameId       uuid.UUID        `json:"gameId"`
-	State        GameState        `json:"gameState"`
 	Participants map[Player]AiBot `json:"participants"`
+	State        GameState        `json:"gameState"`
+	Moves        []Move           `json:"moves"`
 }
 
 type GameState struct {
@@ -109,14 +109,15 @@ type Move struct {
 	Player Player
 	Board  Board
 	Path   [][2]int // Any number of coordinates for the strategy board, but
-	// if StrategyBoard is SCORE, there will only be two Path ints: the FROM and the TO
+	// if the Board is SCORE, there will only be two Path ints: the FROM and the TO on the scoreboard
 }
 
-func (move Move) String() string {
-	if move.Board == SCORE {
-		return fmt.Sprintf("Move { Player: %s / Take points }", move.Player)
+func (m Move) String() string {
+	if m.Board == SCORE {
+		n := m.Path[0][1] - m.Path[0][0]
+		return fmt.Sprintf("Move { Player: %s / Take %d point(s) }", m.Player, n)
 	}
-	return fmt.Sprintf("Move { Player: %s / Path: %v}", move.Player, move.Path)
+	return fmt.Sprintf("Move { Player: %s / Path: %v}", m.Player, m.Path)
 }
 
 type AiBot struct {
