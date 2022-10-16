@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"github.com/google/uuid"
 	"os"
 )
 
@@ -13,28 +12,12 @@ func abs(a int) int {
 	return a
 }
 
-func InitializeNewGame() {
-	gameId := uuid.New()
-	initialState := GameState{
-		Player:        RED,
-		StrategyBoard: EmptyStrategyBoard(),
-		ScoreBoard:    [3]int{0, 0, 0},
-		UnusedPawns:   [3]int{3, 3, 3},
-		ForceMovePawn: [2]int{9, 9},
-		AfterTurnNo:   0,
-	}
-	participants := map[Player]AiBot{}
-	waitingGame = Game{gameId, participants, initialState, nil}
-	waitingGame.Participants[RED] = invinciBot
-	fmt.Printf("Created a new game: %v. Should we add Simen as RED immediately?\n", gameId)
-}
-
-func availableScorePoints(strategyBoard [6][]int, scoreBoard [3]int, player Player) int {
+func availableScorePoints(strategyBoard [6][]int, scoreBoard [3]int, colour Colour) int {
 	// The final move has to end _exactly_ at TargetScore. (Can't move 6 to go from 57 to 60.)
 	for y := len(strategyBoard) - 1; y >= 0; y-- {
-		if y <= TargetScore-scoreBoard[player] {
+		if y <= TargetScore-scoreBoard[colour] {
 			for x := range strategyBoard[y] {
-				if Player(strategyBoard[y][x]) == player {
+				if Colour(strategyBoard[y][x]) == colour {
 					return y + 1
 				}
 			}
@@ -69,11 +52,17 @@ func isEmpty(coordinate [2]int, state GameState) bool {
 	return isOnBoard(coordinate) && state.StrategyBoard[coordinate[0]][coordinate[1]] == 9
 }
 
+// Increments the AfterTurnNo variable and sets the PlayerInTurn variable accordingly
+func moveTurn(state *GameState) {
+	state.AfterTurnNo++
+	state.ColourInTurn = Colour(state.AfterTurnNo % 3)
+}
+
 // Given a game state and a move, calculates and returns the following game state
 func move(state GameState, move Move) (GameState, error) {
 
-	if state.Player != move.Player {
-		return state, fmt.Errorf("%v player is in turn (not %v)", state.Player, move.Player)
+	if state.ColourInTurn != move.Colour {
+		return state, fmt.Errorf("%v player is in turn (not %v)", state.ColourInTurn, move.Colour)
 	}
 
 	if !move.isIn(validMoves(state)) {
@@ -85,8 +74,8 @@ func move(state GameState, move Move) (GameState, error) {
 
 	if move.Board == SCORE {
 		// Grab the points:
-		followingGameState.ScoreBoard[move.Player] = move.Path[0][1]
-		followingGameState.AfterTurnNo++
+		followingGameState.ScoreBoard[move.Colour] = move.Path[0][1]
+		moveTurn(&followingGameState)
 		return followingGameState, nil
 	}
 
@@ -94,9 +83,9 @@ func move(state GameState, move Move) (GameState, error) {
 
 	if move.Path[0][0] == 9 && move.Path[0][1] == 9 {
 		// We're entering the board
-		followingGameState.StrategyBoard[move.Path[0][0]][move.Path[0][1]] = move.Player.toInt()
-		followingGameState.UnusedPawns[move.Player]--
-		followingGameState.AfterTurnNo++
+		followingGameState.StrategyBoard[move.Path[1][0]][move.Path[1][1]] = move.Colour.toInt()
+		followingGameState.UnusedPawns[move.Colour]--
+		moveTurn(&followingGameState)
 		return followingGameState, nil
 	}
 
@@ -113,11 +102,11 @@ func move(state GameState, move Move) (GameState, error) {
 			// we are not jumping over a pawn. In this case, we're not either allowed to leave
 			// the board, so we can now just move the pawn and go on to the next path element.
 			followingGameState.StrategyBoard[originY][originX] = 9
-			followingGameState.StrategyBoard[destinationY][destinationX] = move.Player.toInt()
+			followingGameState.StrategyBoard[destinationY][destinationX] = move.Colour.toInt()
 
 			// no jumping took place, so the pawn cannot move further.
 			// we can simply return from this method:
-			followingGameState.AfterTurnNo++
+			moveTurn(&followingGameState)
 			return followingGameState, nil
 		}
 
@@ -148,9 +137,9 @@ func move(state GameState, move Move) (GameState, error) {
 
 		// Check if we jumped off of the board:
 		if isInLimbo([2]int{destinationY, destinationX}) {
-			followingGameState.UnusedPawns[move.Player.toInt()]++
+			followingGameState.UnusedPawns[move.Colour.toInt()]++
 		} else {
-			followingGameState.StrategyBoard[destinationY][destinationX] = move.Player.toInt()
+			followingGameState.StrategyBoard[destinationY][destinationX] = move.Colour.toInt()
 		}
 
 		// free up the cell we just left:
@@ -163,7 +152,7 @@ func move(state GameState, move Move) (GameState, error) {
 
 	} // loop end
 
-	followingGameState.AfterTurnNo++
+	moveTurn(&followingGameState)
 	return followingGameState, nil
 }
 
@@ -171,7 +160,7 @@ func (m Move) isIn(validMoves []Move) bool {
 outerLoop:
 	for _, validMove := range validMoves {
 		if len(validMove.Path) != len(m.Path) ||
-			validMove.Player != m.Player ||
+			validMove.Colour != m.Colour ||
 			validMove.Board != m.Board {
 			continue
 		}
@@ -195,29 +184,29 @@ func validMoves(state GameState) []Move {
 	// If ForceMovePawn[0] is 9, we're not in the middle of a jump path
 	if state.ForceMovePawn[0] == 9 {
 
-		if state.UnusedPawns[state.Player] > 0 {
+		if state.UnusedPawns[state.ColourInTurn] > 0 {
 			// Ah, we can add new pieces to the strategy board
 			for i := range state.StrategyBoard[0] {
 				// can only move to an empty cell on the bottom level
 				if state.StrategyBoard[0][i] == 9 {
-					moves = append(moves, Move{state.Player, STRATEGY, [][2]int{{9, 9}, {0, i}}})
+					moves = append(moves, Move{state.ColourInTurn, STRATEGY, [][2]int{{9, 9}, {0, i}}})
 				}
 			}
 		}
 
-		if state.UnusedPawns[state.Player] < 3 {
+		if state.UnusedPawns[state.ColourInTurn] < 3 {
 			// we have at least one piece on the board already - can we just take points?
-			availableScorePoints := availableScorePoints(state.StrategyBoard, state.ScoreBoard, state.Player)
+			availableScorePoints := availableScorePoints(state.StrategyBoard, state.ScoreBoard, state.ColourInTurn)
 			if availableScorePoints > 0 {
 				// The final move has to end _exactly_ at TargetScore. (Can't move 6 to go from 57 to 60.)
-				currentScore := state.ScoreBoard[state.Player]
-				moves = append(moves, Move{state.Player, SCORE, [][2]int{{currentScore, currentScore + availableScorePoints}}})
+				currentScore := state.ScoreBoard[state.ColourInTurn]
+				moves = append(moves, Move{state.ColourInTurn, SCORE, [][2]int{{currentScore, currentScore + availableScorePoints}}})
 				// path coordinates 9,9,9,9 is shorthand for "take points on the score board"
 			}
 		}
 	}
 
-	if state.UnusedPawns[state.Player] == 3 {
+	if state.UnusedPawns[state.ColourInTurn] == 3 {
 		// All pawns are off of the board. No need to look for further moves.
 		return moves
 	}
@@ -226,7 +215,7 @@ func validMoves(state GameState) []Move {
 	// Now iterate over the cells on the strategy board and look for our pawns:
 	for y := range state.StrategyBoard {
 		for x := range state.StrategyBoard[y] {
-			if Player(state.StrategyBoard[y][x]) == state.Player {
+			if Colour(state.StrategyBoard[y][x]) == state.ColourInTurn {
 				// Found our player in this cell
 
 				for k := range validDirections {
@@ -240,7 +229,7 @@ func validMoves(state GameState) []Move {
 
 						if isEmpty(newCell, state) {
 							path := [][2]int{{y, x}, newCell}
-							moves = append(moves, Move{state.Player, STRATEGY, path})
+							moves = append(moves, Move{state.ColourInTurn, STRATEGY, path})
 						}
 					}
 
@@ -266,7 +255,7 @@ func validMoves(state GameState) []Move {
 							jumpPath := [][2]int{{y, x}, jumpToCell}
 
 							// Now get rid of that pesky pawn
-							moves = append(moves, Move{state.Player, STRATEGY, jumpPath})
+							moves = append(moves, Move{state.ColourInTurn, STRATEGY, jumpPath})
 
 							// Create the game state representing the state after this jump:
 							followingGameState := state.Copy()
@@ -280,10 +269,10 @@ func validMoves(state GameState) []Move {
 							followingGameState.StrategyBoard[y][x] = 9
 							if jumpToX == -1 || jumpToY == BoardHeight || jumpToX == len(state.StrategyBoard[jumpToY]) {
 								// We jumped off of the board!, get us into the set of UnusedPawns pawns:
-								followingGameState.UnusedPawns[state.Player.toInt()]++
+								followingGameState.UnusedPawns[state.ColourInTurn.toInt()]++
 							} else {
 								// Insert us at new position:
-								followingGameState.StrategyBoard[jumpToY][jumpToX] = state.Player.toInt()
+								followingGameState.StrategyBoard[jumpToY][jumpToX] = state.ColourInTurn.toInt()
 							}
 							// Finally, let's make it clear that our next request concerns follow-ups from a jump
 							// using the ForceMovePawn setting. This setting will only be used in recursive calls:
@@ -301,7 +290,7 @@ func validMoves(state GameState) []Move {
 								// The first element in the incoming path will now be identical to the last element
 								// in jumpPath, so let's omit it and append the rest:
 								nextJumpPath := append(jumpPath, followingMoves[i].Path[1:]...)
-								moves = append(moves, Move{state.Player, STRATEGY, nextJumpPath})
+								moves = append(moves, Move{state.ColourInTurn, STRATEGY, nextJumpPath})
 							}
 
 							// This is where we should recalculate the board state and do a recursive call,
@@ -328,7 +317,7 @@ func checkPawnCounts(state GameState) {
 			}
 		}
 		if pawnCount != 3 {
-			fmt.Printf("Well, well, well, player %s seems to have %d pawns, all of a sudden!\n", Player(p), pawnCount)
+			fmt.Printf("Well, well, well, %s seems to have %d pawns, all of a sudden!\n", Colour(p), pawnCount)
 			os.Exit(10)
 		}
 	}

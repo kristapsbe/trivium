@@ -1,7 +1,45 @@
+### JoinGame, Player #2
 POST http://localhost:8080/joinGame
 Content-Type: application/json; charset=utf-8
 
 {
-  "botName" : "InvinciBot 3",
-  "botSlogan" : "I am also unbeatable"
+  "name" : "InvinciBot 2",
+  "slogan" : "I am unbeatable"
 }
+
+### JoinGame, Player #3
+POST http://localhost:8080/joinGame
+Content-Type: application/json; charset=utf-8
+
+{
+  "name" : "InvinciBot 3",
+  "slogan" : "I cannot be beaten"
+}
+
+### Make Illegal Move
+POST http://localhost:8080/makeMove
+Content-Type: application/json; charset=utf-8
+
+{
+  "gameId": "9124db2c-e728-4bfa-bef1-ac395413c54b",
+  "move": {
+    "colour": 1,
+    "board": 0,
+    "path": []
+  }
+}
+
+### Make OK Move
+POST http://localhost:8080/makeMove
+Content-Type: application/json; charset=utf-8
+
+{
+  "gameId": "f3f80d53-e952-41dc-97cd-5a7f92fe0005",
+  "move": {
+    "colour": 1,
+    "board": 0,
+    "path": [[9,9],[0,2]]
+  }
+}
+
+

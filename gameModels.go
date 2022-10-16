@@ -32,15 +32,15 @@ func (b Board) String() string {
 	}
 }
 
-type Player int
+type Colour int
 
 const (
-	RED Player = iota
+	RED Colour = iota
 	GREEN
 	BLUE
 )
 
-func (p Player) String() string {
+func (p Colour) String() string {
 	switch p {
 	case RED:
 		return "Red"
@@ -53,7 +53,7 @@ func (p Player) String() string {
 	}
 }
 
-func (p Player) toInt() int {
+func (p Colour) toInt() int {
 	switch p {
 	case RED:
 		return 0
@@ -67,14 +67,14 @@ func (p Player) toInt() int {
 }
 
 type Game struct {
-	GameId       uuid.UUID        `json:"gameId"`
-	Participants map[Player]AiBot `json:"participants"`
-	State        GameState        `json:"gameState"`
-	Moves        []Move           `json:"moves"`
+	GameId       uuid.UUID         `json:"gameId"`
+	Participants map[Colour]Player `json:"participants"`
+	State        GameState         `json:"gameState"`
+	Moves        []Move            `json:"moves"`
 }
 
 type GameState struct {
-	Player        Player   `json:"player"`
+	ColourInTurn  Colour   `json:"player"`
 	StrategyBoard [6][]int `json:"board"`
 	ScoreBoard    [3]int   `json:"scores"`
 	UnusedPawns   [3]int   `json:"unusedPawns"`
@@ -83,13 +83,13 @@ type GameState struct {
 }
 
 func (state GameState) String() string {
-	return fmt.Sprintf("State { Turn no #%d / Player: %s / ForceMove: %v / Unused: %v / Score: %v / Board: %v }",
-		state.AfterTurnNo, state.Player, state.ForceMovePawn, state.UnusedPawns, state.ScoreBoard, state.StrategyBoard)
+	return fmt.Sprintf("State { Turn no #%d / Colour: %s / ForceMove: %v / Unused: %v / Score: %v / Board: %v }",
+		state.AfterTurnNo, state.ColourInTurn, state.ForceMovePawn, state.UnusedPawns, state.ScoreBoard, state.StrategyBoard)
 }
 
 func (state GameState) Copy() GameState {
 	return GameState{
-		Player: state.Player,
+		ColourInTurn: state.ColourInTurn,
 		StrategyBoard: [BoardHeight][]int{
 			{state.StrategyBoard[0][0], state.StrategyBoard[0][1], state.StrategyBoard[0][2], state.StrategyBoard[0][3], state.StrategyBoard[0][4], state.StrategyBoard[0][5]},
 			{state.StrategyBoard[1][0], state.StrategyBoard[1][1], state.StrategyBoard[1][2], state.StrategyBoard[1][3], state.StrategyBoard[1][4]},
@@ -106,21 +106,25 @@ func (state GameState) Copy() GameState {
 }
 
 type Move struct {
-	Player Player
-	Board  Board
-	Path   [][2]int // Any number of coordinates for the strategy board, but
-	// if the Board is SCORE, there will only be two Path ints: the FROM and the TO on the scoreboard
+	Colour Colour   `json:"colour"`
+	Board  Board    `json:"board"`
+	Path   [][2]int `json:"path"` // Any number of coordinates for the strategy board, but
+	// if the Board is SCORE, there will only be one Path [2]int, namely { FROM, TO } on the scoreboard
 }
 
 func (m Move) String() string {
 	if m.Board == SCORE {
 		n := m.Path[0][1] - m.Path[0][0]
-		return fmt.Sprintf("Move { Player: %s / Take %d point(s) }", m.Player, n)
+		return fmt.Sprintf("Move { Colour: %s / Take %d point(s) }", m.Colour, n)
 	}
-	return fmt.Sprintf("Move { Player: %s / Path: %v}", m.Player, m.Path)
+	return fmt.Sprintf("Move {  Colour: %s / Path: %v}", m.Colour, m.Path)
 }
 
-type AiBot struct {
-	Name   string `json:"botName"`
-	Slogan string `json:"botSlogan"`
+type Player struct {
+	Name   string `json:"name"`
+	Slogan string `json:"slogan"`
+}
+
+func (p Player) String() string {
+	return fmt.Sprintf("Player { Id: %s / Slogan: %s }", p.Name, p.Slogan)
 }

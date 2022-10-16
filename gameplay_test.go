@@ -10,7 +10,6 @@ import (
 var gameState GameState
 
 func TestMain(m *testing.M) {
-	fmt.Print("OK, then, let's do those tests!\n")
 
 	gameBoard := EmptyStrategyBoard()
 	// Populate our board so the tests have something to work on:
@@ -25,13 +24,15 @@ func TestMain(m *testing.M) {
 	gameBoard[5][0] = 2 // blue is lucky ... or actually ...
 
 	gameState = GameState{
-		Player:        RED,
+		ColourInTurn:  RED,
 		StrategyBoard: gameBoard,
 		ScoreBoard:    [3]int{59, 55, 57},
 		UnusedPawns:   [3]int{0, 0, 2}, // since we just placed three pawns on the board
 		ForceMovePawn: [2]int{9, 9},
 		AfterTurnNo:   0,
 	}
+
+	fmt.Print("Setup complete. Now, let's do those tests!\n")
 
 	// call flag.Parse() here if TestMain uses flags
 	os.Exit(m.Run())
@@ -47,7 +48,7 @@ func TestAbs(t *testing.T) {
 func TestScoreMoves(t *testing.T) {
 	fmt.Println("Testing score moves with the move() function")
 	scoreMove := Move{
-		Player: RED,
+		Colour: RED,
 		Board:  SCORE,
 		Path:   [][2]int{{59, 60}},
 	}
@@ -66,7 +67,7 @@ func TestIllegalMoves(t *testing.T) {
 	fmt.Println("Testing illegal moves with the move() function")
 
 	illegalPlayer := Move{
-		Player: GREEN,
+		Colour: GREEN,
 		Board:  STRATEGY,
 		Path:   [][2]int{{4, 0}, {3, 0}},
 	}
@@ -75,7 +76,7 @@ func TestIllegalMoves(t *testing.T) {
 	assert.NotNil(t, err, "RED is in turn, not GREEN")
 
 	illegalPath := Move{
-		Player: RED,
+		Colour: RED,
 		Board:  STRATEGY,
 		Path:   nil,
 	}
@@ -84,7 +85,7 @@ func TestIllegalMoves(t *testing.T) {
 	assert.NotNil(t, err, "A nil path shouldn't be accepted")
 
 	illegalMove := Move{
-		Player: RED,
+		Colour: RED,
 		Board:  STRATEGY,
 		Path:   [][2]int{{4, 0}, {3, 0}},
 	}
@@ -97,7 +98,7 @@ func TestIllegalMoves(t *testing.T) {
 func TestSimpleMoves(t *testing.T) {
 	fmt.Println("Testing simple moves with the move() function")
 	legalMove := Move{
-		Player: RED,
+		Colour: RED,
 		Board:  STRATEGY,
 		Path:   [][2]int{{0, 2}, {1, 2}},
 	}
@@ -106,14 +107,15 @@ func TestSimpleMoves(t *testing.T) {
 	assert.Nil(t, err, "Red should be able to move {0,2}=>{1,2}")
 	assert.True(t, isEmpty([2]int{0, 2}, newState))
 	assert.Equal(t, gameState.AfterTurnNo+1, newState.AfterTurnNo, "The AfterTurnNo variable should have ben ++ed")
+	assert.Equal(t, GREEN, newState.ColourInTurn, "The PlayerInTurn variable should have ben changed")
 }
 
 func TestJumpMoves(t *testing.T) {
 	fmt.Println("Testing jump moves with the move() function")
 	greenState := gameState.Copy()
-	greenState.Player = GREEN
+	greenState.ColourInTurn = GREEN
 	jumpMove := Move{
-		Player: GREEN,
+		Colour: GREEN,
 		Board:  STRATEGY,
 		Path:   [][2]int{{4, 0}, {6, 0}},
 	}
@@ -246,17 +248,17 @@ func TestValidMoves(t *testing.T) {
 
 	// red should be able to grab a point:
 	assert.Contains(t, moves, Move{0, SCORE, [][2]int{{59, 60}}},
-		"Player Red should be able to take a point (i.e. move 59=>60) on the score board")
+		"Colour Red should be able to take a point (i.e. move 59=>60) on the score board")
 	assert.Equal(t, 11, len(moves), "There should be 9 options for player Red")
 
 	assert.Contains(t, moves, Move{0, STRATEGY, [][2]int{{0, 1}, {2, 1}, {2, -1}}},
-		"Player Red should be able to do a double jump.")
+		"Colour Red should be able to do a double jump.")
 
 	// Now let's turn to blue
-	gameState.Player = BLUE
+	gameState.ColourInTurn = BLUE
 	// Shouldn't be able to take points:
 	moves = validMoves(gameState)
 	assert.NotContains(t, moves, Move{0, SCORE, [][2]int{{9, 9}, {9, 9}}},
-		"Player Blue shouldn't be able to take a point on the score board")
+		"Colour Blue shouldn't be able to take a point on the score board")
 
 }

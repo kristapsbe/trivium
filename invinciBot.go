@@ -1,6 +1,6 @@
 package main
 
-var invinciBot = AiBot{
+var invinciBot = Player{
 	Name:   "invinciBot",
 	Slogan: "You can't beat me",
 }
